@@ -345,7 +345,7 @@
             font-weight: 600;
         }
 
-        #auth-confirm-wrapper {
+        #auth-confirm-wrapper, #auth-name-wrapper {
             display: none;
             overflow: hidden;
             max-height: 0;
@@ -353,10 +353,19 @@
             opacity: 0;
         }
 
-        #auth-confirm-wrapper.show {
-            display: block;
+        #auth-confirm-wrapper.show, #auth-name-wrapper.show {
+            display: flex;
             max-height: 80px;
             opacity: 1;
+        }
+
+        #auth-name-wrapper {
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        #auth-name-wrapper input {
+            width: 100%;
         }
 
         .auth-btn {
@@ -486,6 +495,10 @@
             </div>
             
             <form class="auth-form" id="auth-form">
+                <div id="auth-name-wrapper">
+                    <input type="text" id="auth-first-name" placeholder="first name">
+                    <input type="text" id="auth-last-name" placeholder="last name">
+                </div>
                 <input type="email" id="auth-email" placeholder="email address" required>
                 
                 <div class="auth-password-wrapper">
