@@ -422,3 +422,34 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
 
     return card;
 }
+
+// ========== SIDEBAR ACTIONS ==========
+document.getElementById('nav-create-wishlist').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!auth.currentUser) return;
+    
+    const bagName = prompt("Enter a name for your new bag:");
+    if (bagName && bagName.trim() !== '') {
+        try {
+            await db.collection('users').doc(auth.currentUser.uid)
+                .collection('wishlists').doc(bagName.trim().toLowerCase()).set({
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            // Reload the dashboard view to show the new bag
+            loadCloudDashboard(auth.currentUser);
+        } catch (error) {
+            console.error("Error creating bag:", error);
+            alert("Failed to create bag. Please try again.");
+        }
+    }
+});
+
+document.getElementById('sidebar-signout').addEventListener('click', (e) => {
+    e.preventDefault();
+    auth.signOut().then(() => {
+        // Redirect to landing page
+        window.location.href = 'index.html';
+    }).catch((error) => {
+        console.error("Error signing out:", error);
+    });
+});
