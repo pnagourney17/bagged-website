@@ -224,6 +224,13 @@ async function loadPublicSharedDashboard(uid, bagName) {
             items.push({ id: doc.id, ...doc.data() });
         });
 
+        // Sort items newest first (descending by timestamp)
+        items.sort((a, b) => {
+            const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+            const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+            return timeB - timeA;
+        });
+
         const board = { name: bagName, items: items };
         
         // Pass user object mock since it's anonymous
@@ -258,6 +265,14 @@ async function loadCloudDashboard(user) {
             itemsSnapshot.forEach(itemDoc => {
                 items.push({ id: itemDoc.id, ...itemDoc.data() });
             });
+
+            // Sort items newest first (descending by timestamp)
+            items.sort((a, b) => {
+                const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+                const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+                return timeB - timeA;
+            });
+
             boardsData.push({ name: wishlistDoc.id, items });
         }
 
