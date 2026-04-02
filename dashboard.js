@@ -395,8 +395,9 @@ function renderBoardDetail(container, board, user, isShared) {
         </button>
         <span class="board-detail-title" style="display:flex; align-items:center; gap:8px;">
             ${board.name}
-            <button class="share-btn" style="background:none; border:none; cursor:pointer; color:#999; padding:0; display:flex; align-items:center;" title="Copy Share Link">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            <button class="share-btn" style="background:none; border:none; cursor:pointer; color:#999; padding:0; display:flex; align-items:center; gap: 4px; transition: color 0.2s;" title="Copy Share Link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                <span class="copied-text" style="font-size: 10px; font-weight: normal; opacity: 0; transition: opacity 0.2s;">copied!</span>
             </button>
         </span>
         <span class="board-detail-count">${board.items.length} item${board.items.length !== 1 ? 's' : ''}</span>
@@ -417,8 +418,14 @@ function renderBoardDetail(container, board, user, isShared) {
     if (shareBtn && !isShared && user) {
         shareBtn.addEventListener('click', () => {
             const shareUrl = `https://shop-bagged.com/dashboard.html?u=${user.uid}&b=${encodeURIComponent(board.name)}`;
+            const copiedText = shareBtn.querySelector('.copied-text');
             navigator.clipboard.writeText(shareUrl).then(() => {
-                alert(`Share link copied to clipboard!\n\n${shareUrl}\n\nNote: Please make sure your Firebase Rules allow public reads for the URL to work for others.`);
+                shareBtn.style.color = '#27ae60';
+                copiedText.style.opacity = '1';
+                setTimeout(() => {
+                    shareBtn.style.color = '#999';
+                    copiedText.style.opacity = '0';
+                }, 2000);
             }).catch(() => {
                 prompt("Copy this link:", shareUrl);
             });
@@ -482,9 +489,9 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         <div class="brand" style="font-size:10px; color:#888;">${(item.brand || '').toLowerCase()}</div>
         <div class="name" style="font-weight:bold; margin: 5px 0;">${item.name}</div>
         <div class="price">${item.price}</div>
-        <div class="cta-row" style="display: flex; gap: 0; margin-top: 12px;">
-            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #000; padding: 12px 0; cursor: pointer; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; flex: 1; text-align: center;">Remove</button>' : ''}
-            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" style="background: #000; color: #fff; border: 1px solid #000; padding: 12px 0; cursor: pointer; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; flex: 1; text-align: center;">Add to Checkout</button>
+        <div class="cta-row" style="display: flex; gap: 8px; margin-top: 14px;">
+            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background=\'#fafafa\'; this.style.borderColor=\'#ccc\';" onmouseout="this.style.background=\'#fff\'; this.style.borderColor=\'#ddd\';">Remove</button>' : ''}
+            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;" onmouseover="this.style.background=\'#222\';" onmouseout="this.style.background=\'#000\';">Add to Checkout</button>
         </div>
     `;
 
