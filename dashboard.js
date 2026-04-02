@@ -118,20 +118,39 @@ gateConfirmPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') 
 
 // Sign out from sidebar (handled at bottom of file)
 
-// Auth state listener
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        sidebar.style.display = 'flex';
-        mainContent.style.display = '';
-        loginGate.style.display = 'none';
-        document.getElementById('sidebar-email').innerText = user.email;
-        loadCloudDashboard(user);
-    } else {
-        sidebar.style.display = 'none';
-        mainContent.style.display = 'none';
-        loginGate.style.display = 'flex';
-    }
-});
+// Check if viewing a public shared bag URL
+function getPublicSharedBagParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const u = urlParams.get('u');
+    const b = urlParams.get('b');
+    if (u && b) return { uid: u, bag: b };
+    return null;
+}
+
+const publicSharedParams = getPublicSharedBagParams();
+
+if (publicSharedParams) {
+    // Viewer is checking a public link - bypass auth gate
+    sidebar.style.display = 'none';
+    loginGate.style.display = 'none';
+    mainContent.style.display = '';
+    loadPublicSharedDashboard(publicSharedParams.uid, publicSharedParams.bag);
+} else {
+    // Normal dashboard flow - require authentication
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            sidebar.style.display = 'flex';
+            mainContent.style.display = '';
+            loginGate.style.display = 'none';
+            document.getElementById('sidebar-email').innerText = user.email;
+            loadCloudDashboard(user);
+        } else {
+            sidebar.style.display = 'none';
+            mainContent.style.display = 'none';
+            loginGate.style.display = 'flex';
+        }
+    });
+}
 
 // ========== CHECKOUT CART ==========
 const checkoutCart = [];
@@ -177,13 +196,42 @@ function removeFromCart(itemId) {
     }
 }
 
-// Check if viewing a shared bag
+// Check if viewing a shared bag internally via hash
 function getSharedBagId() {
     const hash = window.location.hash;
     if (hash && hash.startsWith('#bag-')) {
         return decodeURIComponent(hash.replace('#bag-', ''));
     }
     return null;
+}
+
+// Function to load a strictly public dashboard view
+async function loadPublicSharedDashboard(uid, bagName) {
+    const container = document.getElementById('bags-container');
+    try {
+        console.log('Loading public shared bag:', bagName);
+        const boardRef = db.collection('users').doc(uid).collection('wishlists').doc(bagName);
+        const itemsSnapshot = await boardRef.collection('items').get();
+        
+        if (itemsSnapshot.empty) {
+            container.innerHTML = "<p style='color: #888;'>bag not found or is empty</p>";
+            return;
+        }
+        
+        container.innerHTML = "";
+        const items = [];
+        itemsSnapshot.forEach(doc => {
+            items.push({ id: doc.id, ...doc.data() });
+        });
+
+        const board = { name: bagName, items: items };
+        
+        // Pass user object mock since it's anonymous
+        renderBoardDetail(container, board, {uid: uid}, true);
+    } catch (error) {
+        console.error('Shared bag load error:', error);
+        container.innerHTML = `<p style="color: #d63031; font-size: 13px;">Error loading bag. Are you sure you have access?</p><p style="color: #888; font-size: 10px; margin-top: 8px;">Ensure Firestore rules allow public reads for the owner's database collection.</p>`;
+    }
 }
 
 async function loadCloudDashboard(user) {
@@ -286,14 +334,48 @@ function renderBoardsOverview(container, boardsData, user) {
         collageHTML += '</div>';
 
         card.innerHTML = `
-            ${collageHTML}
+            <div style="position:relative;">
+                ${collageHTML}
+                <button class="delete-board-btn" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.9); border:none; width:24px; height:24px; border-radius:12px; font-size:14px; cursor:pointer; color:#999; display:flex; align-items:center; justify-content:center; z-index:10; transition:all 0.2s;" onmouseover="this.style.background='#fff'; this.style.color='#d63031'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.1)';" onmouseout="this.style.background='rgba(255,255,255,0.9)'; this.style.color='#999'; this.style.boxShadow='none';" title="Delete Wishlist">
+                    &times;
+                </button>
+            </div>
             <div class="board-name">${board.name}</div>
             <div class="board-count">${board.items.length} item${board.items.length !== 1 ? 's' : ''}</div>
         `;
 
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+            // Prevent opening if clicking the delete button
+            if (e.target.closest('.delete-board-btn')) return;
             container.innerHTML = '';
             renderBoardDetail(container, board, user, false);
+        });
+
+        const deleteBtn = card.querySelector('.delete-board-btn');
+        deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm(`Are you sure you want to delete your "${board.name}" wishlist? This action cannot be undone.`)) {
+                card.style.opacity = '0.5';
+                deleteBtn.style.pointerEvents = 'none';
+                try {
+                    const boardRef = db.collection('users').doc(user.uid).collection('wishlists').doc(board.name);
+                    const itemsSnap = await boardRef.collection('items').get();
+                    
+                    const batch = db.batch();
+                    itemsSnap.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    batch.delete(boardRef);
+                    await batch.commit();
+
+                    loadCloudDashboard(user);
+                } catch (err) {
+                    console.error("Error deleting wishlist:", err);
+                    alert("Failed to delete wishlist. Please try again.");
+                    card.style.opacity = '1';
+                    deleteBtn.style.pointerEvents = 'auto';
+                }
+            }
         });
 
         grid.appendChild(card);
@@ -311,7 +393,12 @@ function renderBoardDetail(container, board, user, isShared) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             back
         </button>
-        <span class="board-detail-title">${board.name}</span>
+        <span class="board-detail-title" style="display:flex; align-items:center; gap:8px;">
+            ${board.name}
+            <button class="share-btn" style="background:none; border:none; cursor:pointer; color:#999; padding:0; display:flex; align-items:center;" title="Copy Share Link">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+            </button>
+        </span>
         <span class="board-detail-count">${board.items.length} item${board.items.length !== 1 ? 's' : ''}</span>
     `;
     container.appendChild(header);
@@ -324,6 +411,21 @@ function renderBoardDetail(container, board, user, isShared) {
             loadCloudDashboard(user);
         }
     });
+
+    // Share link handler
+    const shareBtn = header.querySelector('.share-btn');
+    if (shareBtn && !isShared && user) {
+        shareBtn.addEventListener('click', () => {
+            const shareUrl = `https://shop-bagged.com/dashboard.html?u=${user.uid}&b=${encodeURIComponent(board.name)}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert(`Share link copied to clipboard!\n\n${shareUrl}\n\nNote: Please make sure your Firebase Rules allow public reads for the URL to work for others.`);
+            }).catch(() => {
+                prompt("Copy this link:", shareUrl);
+            });
+        });
+    } else if (shareBtn) {
+        shareBtn.style.display = 'none';
+    }
 
     // Product grid
     const grid = document.createElement('div');
