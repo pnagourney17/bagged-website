@@ -116,11 +116,7 @@ gatePassword.addEventListener('keydown', (e) => {
 });
 gateConfirmPassword.addEventListener('keydown', (e) => { if (e.key === 'Enter') gateSubmit.click(); });
 
-// Sign out from sidebar
-document.getElementById('sidebar-signout').addEventListener('click', (e) => {
-    e.preventDefault();
-    auth.signOut();
-});
+// Sign out from sidebar (handled at bottom of file)
 
 // Auth state listener
 auth.onAuthStateChanged((user) => {
@@ -424,31 +420,66 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
 }
 
 // ========== SIDEBAR ACTIONS ==========
-document.getElementById('nav-create-wishlist').addEventListener('click', async (e) => {
+const createModal = document.getElementById('create-bag-modal');
+const closeCreateModalBtn = document.getElementById('close-create-modal');
+const submitCreateBtn = document.getElementById('submit-create-bag');
+const bagModalInput = document.getElementById('bag-modal-input');
+
+document.getElementById('nav-create-wishlist').addEventListener('click', (e) => {
     e.preventDefault();
     if (!auth.currentUser) return;
-    
-    const bagName = prompt("Enter a name for your new bag:");
-    if (bagName && bagName.trim() !== '') {
+    createModal.style.display = 'flex';
+    setTimeout(() => { createModal.style.opacity = '1'; bagModalInput.focus(); }, 10);
+});
+
+function closeCreateModal() {
+    createModal.style.opacity = '0';
+    setTimeout(() => { 
+        createModal.style.display = 'none'; 
+        bagModalInput.value = '';
+    }, 300);
+}
+
+closeCreateModalBtn.addEventListener('click', closeCreateModal);
+
+submitCreateBtn.addEventListener('click', async () => {
+    if (!auth.currentUser) return;
+    const bagName = bagModalInput.value.trim();
+    if (bagName) {
+        const oldText = submitCreateBtn.innerText;
+        submitCreateBtn.innerText = 'CREATING...';
+        submitCreateBtn.disabled = true;
         try {
             await db.collection('users').doc(auth.currentUser.uid)
-                .collection('wishlists').doc(bagName.trim().toLowerCase()).set({
+                .collection('wishlists').doc(bagName.toLowerCase()).set({
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-            // Reload the dashboard view to show the new bag
+            closeCreateModal();
             loadCloudDashboard(auth.currentUser);
         } catch (error) {
             console.error("Error creating bag:", error);
             alert("Failed to create bag. Please try again.");
+        } finally {
+            submitCreateBtn.innerText = oldText;
+            submitCreateBtn.disabled = false;
         }
     }
+});
+
+bagModalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitCreateBtn.click();
 });
 
 document.getElementById('sidebar-signout').addEventListener('click', (e) => {
     e.preventDefault();
     auth.signOut().then(() => {
-        // Redirect to landing page
-        window.location.href = 'index.html';
+        // Smart redirect: if inside the Chrome Extension, go to landing.html
+        // If on the live web, simply go back to the root domain.
+        if (window.location.protocol.includes('chrome-extension')) {
+            window.location.href = 'landing.html';
+        } else {
+            window.location.href = '/';
+        }
     }).catch((error) => {
         console.error("Error signing out:", error);
     });
