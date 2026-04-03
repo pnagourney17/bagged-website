@@ -1,0 +1,5 @@
+Copyright (c) 2026 Bagged. All rights reserved.
+
+This is proprietary software. No part of this software, including the HTML, Javascript, CSS, and extension architecture, may be copied, reproduced, modified, distributed, or sold without explicit written permission from the creator. 
+
+By default, any source code hosted in this repository or packaged within the Bagged Chrome Extension is fully protected under international Copyright Law. "All Rights Reserved" applies universally.
