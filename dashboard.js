@@ -608,3 +608,21 @@ document.getElementById('sidebar-signout').addEventListener('click', (e) => {
         console.error("Error signing out:", error);
     });
 });
+
+// Settings & Support Modal
+const settingsBtn = document.getElementById('settings-support-btn');
+const settingsOverlay = document.getElementById('settings-modal-overlay');
+const settingsClose = document.getElementById('settings-modal-close');
+
+if (settingsBtn && settingsOverlay) {
+    settingsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        settingsOverlay.classList.add('active');
+    });
+    settingsClose.addEventListener('click', () => {
+        settingsOverlay.classList.remove('active');
+    });
+    settingsOverlay.addEventListener('click', (e) => {
+        if (e.target === settingsOverlay) settingsOverlay.classList.remove('active');
+    });
+}
