@@ -505,10 +505,24 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         <div class="name" style="font-weight:bold; margin: 5px 0;">${item.name}</div>
         <div class="price">${item.price}</div>
         <div class="cta-row" style="display: flex; gap: 8px; margin-top: 14px;">
-            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" onmouseover="this.style.background=\'#fafafa\'; this.style.borderColor=\'#ccc\';" onmouseout="this.style.background=\'#fff\'; this.style.borderColor=\'#ddd\';">Remove</button>' : ''}
-            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;" onmouseover="this.style.background=\'#222\';" onmouseout="this.style.background=\'#000\';">Add to Checkout</button>
+            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
+            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
         </div>
     `;
+
+    // Hover effects via JS (inline handlers violate Chrome Extension CSP)
+    if (!isSharedView) {
+        const removeBtn = card.querySelector('.remove-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('mouseenter', () => { removeBtn.style.background = '#fafafa'; removeBtn.style.borderColor = '#ccc'; });
+            removeBtn.addEventListener('mouseleave', () => { removeBtn.style.background = '#fff'; removeBtn.style.borderColor = '#ddd'; });
+        }
+    }
+    const checkoutBtn = card.querySelector('.add-checkout-btn');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('mouseenter', () => { checkoutBtn.style.background = '#222'; });
+        checkoutBtn.addEventListener('mouseleave', () => { checkoutBtn.style.background = '#000'; });
+    }
 
     if (!isSharedView) {
         card.querySelector('.remove-btn').onclick = async () => {
