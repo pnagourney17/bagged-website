@@ -464,6 +464,116 @@
             font-weight: 600;
             cursor: pointer;
         }
+
+        /* Settings Modal */
+        .settings-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.25);
+            z-index: 3000;
+            align-items: center;
+            justify-content: center;
+        }
+        .settings-modal-overlay.active {
+            display: flex;
+        }
+        .settings-modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            overflow: hidden;
+            margin: 20px;
+        }
+        .settings-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 24px 28px 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .settings-modal-header h2 {
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin: 0;
+        }
+        .settings-modal-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #999;
+            line-height: 1;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        .settings-modal-close:hover { color: #000; }
+        .settings-modal-body {
+            padding: 24px 28px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .settings-section-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #999;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+        }
+        .settings-contact-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #000;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 10px 14px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            transition: all 0.2s;
+            margin-bottom: 24px;
+        }
+        .settings-contact-link:hover {
+            border-color: #000;
+            background: #fafafa;
+        }
+        .policy-box {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 18px 20px;
+            font-size: 12px;
+            color: #555;
+            line-height: 1.7;
+        }
+        .policy-box h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #999;
+            font-weight: 600;
+            margin: 16px 0 6px 0;
+        }
+        .policy-box h3:first-child { margin-top: 0; }
+        .policy-box ul {
+            padding-left: 16px;
+            margin: 6px 0;
+        }
+        .policy-box li { margin-bottom: 4px; }
+        .policy-box em {
+            font-style: italic;
+            color: #888;
+        }
     </style>
 </head>
 
@@ -492,6 +602,10 @@
         </div>
         <div class="sidebar-bottom">
             <div class="sidebar-user-email" id="sidebar-email" style="display:none;"></div>
+            <a class="nav-icon" href="#" id="settings-support-btn" title="Settings & Support">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <span>support</span>
+            </a>
             <a class="nav-icon" href="#" id="sidebar-signout" title="Sign Out">
                 <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 <span>sign out</span>
@@ -572,6 +686,58 @@
     <!-- Fixed Copyright Footer -->
     <div style="position: fixed; bottom: 16px; right: 24px; font-size: 9px; color: #b0b0b0; letter-spacing: 0.5px; z-index: 100; pointer-events: none; text-transform: uppercase;">
         &copy; 2026 Bagged. All rights reserved.
+    </div>
+
+    <!-- Settings & Support Modal -->
+    <div class="settings-modal-overlay" id="settings-modal-overlay">
+        <div class="settings-modal">
+            <div class="settings-modal-header">
+                <h2>Settings &amp; Support</h2>
+                <button class="settings-modal-close" id="settings-modal-close">&times;</button>
+            </div>
+            <div class="settings-modal-body">
+                <p class="settings-section-title">Contact Us</p>
+                <a href="mailto:info@shop-bagged.com" class="settings-contact-link">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px;"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    info@shop-bagged.com
+                </a>
+
+                <p class="settings-section-title">Privacy Policy</p>
+                <div class="policy-box">
+                    <p><strong>Last Updated: 2/4/2026</strong></p>
+                    <h3>1. Introduction</h3>
+                    <p>This Privacy Policy describes how Bagged collects and uses information when you install and use the Bagged Chrome Extension. We are committed to protecting your personal data and being transparent about our practices.</p>
+                    <h3>2. Information We Collect</h3>
+                    <p>To provide the core functionality of the Extension, we collect the following personal information:</p>
+                    <ul>
+                        <li><strong>Name:</strong> To personalize your user experience.</li>
+                        <li><strong>Email Address:</strong> To identify your account, provide synchronization across devices, and communicate essential service updates.</li>
+                    </ul>
+                    <h3>3. Data Collection Method</h3>
+                    <p>We collect this information when you sign in via Google OAuth or a manual sign-up form, or voluntarily provide it during account setup.</p>
+                    <h3>4. How We Use Your Information</h3>
+                    <ul>
+                        <li><strong>Account Management:</strong> Creating and maintaining your user profile.</li>
+                        <li><strong>Functionality:</strong> Syncing your settings or data across different Chrome browsers.</li>
+                        <li><strong>Communication:</strong> Sending important technical notices, security alerts, or support responses.</li>
+                    </ul>
+                    <p><em>Note: We do not sell, rent, or trade your name or email address to third-party marketers.</em></p>
+                    <h3>5. Data Retention and Deletion</h3>
+                    <p>We retain your information only as long as your account is active. To delete your data, email <strong>info@shop-bagged.com</strong>. We will delete all personal records within 7 business days.</p>
+                    <h3>6. Security</h3>
+                    <p>We implement industry-standard security measures, including HTTPS encryption. However, no method of transmission over the internet is 100% secure.</p>
+                    <h3>7. Disclosure to Third Parties</h3>
+                    <ul>
+                        <li><strong>Service Providers:</strong> Trusted third-party services (e.g., Firebase) bound by strict confidentiality agreements.</li>
+                        <li><strong>Legal Requirements:</strong> If required by law or to protect our rights.</li>
+                    </ul>
+                    <h3>8. Compliance with Google User Data Policy</h3>
+                    <p>Bagged complies with the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+                    <h3>9. Contact Information</h3>
+                    <p>Email: <strong>info@shop-bagged.com</strong> &nbsp;|&nbsp; Website: <strong>shop-bagged.com</strong></p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="firebase-app.js"></script>
