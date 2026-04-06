@@ -3,228 +3,403 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bagged - Everything you love...</title>
-    <!-- Google Fonts -->
+    <title>Bagged – Your taste, your tabs, your wishlist</title>
+    <meta name="description" content="Bagged is your one-stop shopping assistant. Save items from any online store, organise wishlists, and share them with friends.">
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600&display=swap" rel="stylesheet">
-    <!-- Firebase SDks -->
-    <script src="firebase-app.js"></script>
-    <script src="firebase-auth.js"></script>
-    <style>
-        :root {
-            --bg: #ffffff;
-            --text: #000000;
-            --gray: #000000;
-            --border: #dddddd;
-        }
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --cream: #FAF6E9;
+            --black: #0A0A0A;
+            --white: #FFFFFF;
+            --gray: #555555;
+            --light-gray: #AAAAAA;
+            --border: #E0E0E0;
         }
 
         body {
-            background-color: var(--bg);
-            color: #000000;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Inter', sans-serif;
+            color: var(--black);
+            background: var(--white);
+            overflow-x: hidden;
         }
 
-        /* Navigation */
+        /* ===== NAV ===== */
         nav {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 24px 60px;
+            justify-content: space-between;
+            padding: 20px 60px;
+            background: var(--white);
             border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 500;
         }
 
         .nav-logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             text-decoration: none;
-            color: var(--text);
-            font-size: 20px;
-            font-weight: 300;
-            letter-spacing: 2px;
+            color: var(--black);
         }
 
-        .nav-logo img {
-            width: 24px;
-            height: 24px;
-        }
+        .nav-logo img { width: 36px; height: 36px; }
 
-        .nav-links {
-            display: flex;
-            gap: 32px;
-            align-items: center;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--gray);
-            font-size: 13px;
-            text-transform: lowercase;
-            letter-spacing: 1px;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text);
-        }
-
-        .btn-primary {
-            background: var(--text);
-            color: var(--bg) !important;
-            padding: 10px 24px;
-            border-radius: 4px;
-            text-transform: uppercase !important;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            cursor: pointer;
-            border: none;
-            text-decoration: none;
-            font-size: 11px !important;
-            transition: opacity 0.2s;
-        }
-
-        .btn-primary:hover {
-            opacity: 0.8;
-        }
-
-        /* Hero Section */
-        .hero {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 120px 20px;
-            flex: 1;
-        }
-
-        .hero-sub {
-            font-size: 24px;
-            color: #000000;
-            font-weight: 300;
-            margin-bottom: 20px;
-        }
-
-        .hero-brand {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 24px;
-            margin-bottom: 30px;
-        }
-
-        .hero-logo {
-            width: 72px;
-            height: 72px;
-            object-fit: contain;
-        }
-
-        .hero-title {
-            font-size: 72px;
-            font-weight: 300;
-            color: #000000;
-            letter-spacing: 6px;
-            line-height: 1;
-        }
-
-        .hero-desc {
-            font-size: 18px;
-            color: #000000;
-            max-width: 500px;
-            line-height: 1.6;
-            margin-bottom: 40px;
-            font-weight: 300;
-        }
-
-        .hero-actions {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 10px 24px;
-            border-radius: 4px;
+        .nav-logo span {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            font-weight: 600;
-            letter-spacing: 1.5px;
+        }
+
+        .nav-ctas {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-outline-nav {
+            padding: 10px 24px;
+            border: 1.5px solid var(--black);
+            border-radius: 40px;
+            background: transparent;
+            color: var(--black);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
             text-decoration: none;
-            font-size: 11px;
             transition: all 0.2s;
         }
 
-        .btn-outline:hover {
-            border-color: var(--text);
+        .btn-outline-nav:hover { background: #f5f5f5; }
+
+        .btn-solid-nav {
+            padding: 10px 24px;
+            border: 1.5px solid var(--black);
+            border-radius: 40px;
+            background: var(--black);
+            color: var(--white);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        /* Features Section */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
+        .btn-solid-nav:hover { background: #333; }
+
+        /* ===== HERO ===== */
+        .hero {
+            background: var(--cream);
             padding: 80px 60px;
-            background: #fafafa;
-            border-top: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            min-height: 500px;
         }
 
-        .feature-card {
-            text-align: center;
-            padding: 40px 20px;
-        }
-
-        .feature-icon {
-            font-size: 32px;
+        .hero-text h1 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: clamp(28px, 4vw, 48px);
+            line-height: 1.1;
+            letter-spacing: -1px;
             margin-bottom: 20px;
-            color: var(--text);
+            color: var(--black);
         }
 
-        .feature-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 12px;
-            text-transform: lowercase;
+        .hero-text p {
+            font-size: 15px;
+            color: var(--gray);
+            line-height: 1.6;
+            margin-bottom: 36px;
+            max-width: 380px;
+        }
+
+        .btn-chrome {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border: 2px solid var(--black);
+            border-radius: 40px;
+            background: var(--white);
+            color: var(--black);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-chrome:hover { background: #f5f5f5; }
+
+        .btn-chrome img { width: 22px; height: 22px; }
+
+        .hero-image {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .hero-image-placeholder {
+            width: 100%;
+            aspect-ratio: 16/10;
+            background: #e8e3d5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 13px;
             letter-spacing: 1px;
         }
 
-        .feature-desc {
+        /* ===== WHAT'S BAGGED ===== */
+        .whats-bagged {
+            padding: 100px 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: start;
+            background: var(--white);
+        }
+
+        .whats-bagged-left h2 {
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+            font-size: clamp(36px, 5vw, 60px);
+            font-weight: 400;
+            line-height: 1.1;
+            margin-bottom: 40px;
+        }
+
+        .mockup-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        .mockup-card img { width: 100%; display: block; }
+
+        .mockup-placeholder {
+            background: #f5f5f5;
+            padding: 20px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            aspect-ratio: 3/4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .whats-bagged-right h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 22px;
+            margin-bottom: 16px;
+            line-height: 1.3;
+        }
+
+        .whats-bagged-right p {
+            font-size: 15px;
+            color: var(--gray);
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        .whats-bagged-right h4 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 17px;
+            margin-bottom: 10px;
+        }
+
+        .bagged-helps ul {
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .bagged-helps ul li {
+            font-size: 15px;
+            color: var(--gray);
+            line-height: 1.7;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .bagged-helps ul li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: var(--black);
+        }
+
+        /* ===== HOW IT WORKS ===== */
+        .how-it-works {
+            padding: 100px 60px;
+            background: var(--white);
+            border-top: 1px solid var(--border);
+        }
+
+        .how-it-works-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 60px;
+        }
+
+        .how-it-works-header img { width: 36px; height: 36px; }
+
+        .how-it-works-header h2 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: clamp(28px, 4vw, 40px);
+        }
+
+        .how-it-works-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .steps { display: flex; flex-direction: column; gap: 32px; }
+
+        .step h3 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 20px;
+            margin-bottom: 6px;
+        }
+
+        .step p {
             font-size: 14px;
             color: var(--gray);
             line-height: 1.6;
         }
 
-        /* Footer */
-        footer {
-            padding: 40px 60px;
-            text-align: center;
-            border-top: 1px solid var(--border);
-            color: var(--gray);
-            font-size: 12px;
-            text-transform: lowercase;
+        .video-placeholder {
+            aspect-ratio: 4/3;
+            background: var(--black);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-placeholder span {
+            color: #555;
+            font-size: 13px;
             letter-spacing: 1px;
         }
 
-        /* Modal Auth Container */
+        /* ===== MEET FOUNDER ===== */
+        .meet-founder {
+            background: var(--cream);
+            padding: 100px 60px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .founder-photo-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .founder-photo {
+            width: 340px;
+            height: 340px;
+            border-radius: 24px;
+            object-fit: cover;
+            object-position: top;
+            display: block;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .founder-photo-placeholder {
+            width: 340px;
+            height: 340px;
+            border-radius: 24px;
+            background: #e0d9c8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #aaa;
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .founder-text h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(32px, 4vw, 52px);
+            font-weight: 700;
+            margin-bottom: 28px;
+        }
+
+        .founder-text p {
+            font-size: 15px;
+            color: var(--gray);
+            line-height: 1.8;
+            margin-bottom: 32px;
+        }
+
+        .founder-signature {
+            font-size: 14px;
+            color: var(--black);
+            font-weight: 500;
+            line-height: 1.6;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 32px 60px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--light-gray);
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+        }
+
+        footer a {
+            color: var(--light-gray);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        footer a:hover { color: var(--black); }
+
+        /* ===== AUTH MODAL (preserved) ===== */
         .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(255, 255, 255, 0.95);
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(255,255,255,0.96);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -240,83 +415,75 @@
         }
 
         .auth-modal {
-            background: var(--bg);
+            background: var(--white);
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 40px;
             width: 100%;
             max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
             position: relative;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active .auth-modal {
-            transform: translateY(0);
         }
 
         .close-modal {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 16px; right: 20px;
             background: none;
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: var(--gray);
+            color: #999;
             line-height: 1;
-        }
-
-        .close-modal:hover {
-            color: var(--text);
         }
 
         .auth-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
 
-        .auth-header img {
-            width: 32px;
-            height: 32px;
-            margin-bottom: 12px;
-        }
+        .auth-header img { width: 36px; margin-bottom: 12px; }
 
         .auth-header h2 {
-            font-size: 18px;
-            font-weight: 300;
-            letter-spacing: 2px;
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 3px;
         }
 
         .auth-form {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
+
+        #auth-name-wrapper {
+            display: none;
+            gap: 12px;
+        }
+
+        #auth-name-wrapper.show { display: flex; }
+
+        #auth-confirm-wrapper { display: none; }
+        #auth-confirm-wrapper.show { display: block; }
 
         .auth-form input {
-            padding: 14px;
+            width: 100%;
+            padding: 12px 14px;
             border: 1px solid var(--border);
-            border-radius: 4px;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
             font-size: 13px;
             outline: none;
-            font-family: inherit;
+            transition: border-color 0.2s;
         }
 
-        .auth-form input:focus {
-            border-color: #000000;
-        }
+        .auth-form input:focus { border-color: var(--black); }
 
         .auth-password-wrapper {
             position: relative;
-            width: 100%;
         }
 
-        .auth-password-wrapper input {
-            width: 100%;
-            padding-right: 48px;
-        }
+        .auth-password-wrapper input { padding-right: 60px; }
 
         .toggle-password {
             position: absolute;
@@ -325,168 +492,181 @@
             transform: translateY(-50%);
             background: none;
             border: none;
-            cursor: pointer;
-            padding: 4px;
-            color: #888;
             font-size: 11px;
-            letter-spacing: 0.5px;
+            color: #999;
+            cursor: pointer;
             text-transform: lowercase;
-            line-height: 1;
-            transition: color 0.2s, font-weight 0.2s;
-            font-family: inherit;
-        }
-
-        .toggle-password:hover {
-            color: #444;
-        }
-
-        .toggle-password.active {
-            color: #000;
-            font-weight: 600;
-        }
-
-        #auth-confirm-wrapper, #auth-name-wrapper {
-            display: none;
-            overflow: hidden;
-            max-height: 0;
-            transition: max-height 0.3s ease, opacity 0.3s ease;
-            opacity: 0;
-        }
-
-        #auth-confirm-wrapper.show, #auth-name-wrapper.show {
-            display: flex;
-            max-height: 80px;
-            opacity: 1;
-        }
-
-        #auth-name-wrapper {
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        #auth-name-wrapper input {
-            width: 100%;
+            letter-spacing: 0.5px;
+            font-family: 'Inter', sans-serif;
         }
 
         .auth-btn {
-            background: var(--text);
-            color: var(--bg);
-            border: none;
+            width: 100%;
             padding: 14px;
-            border-radius: 4px;
-            font-size: 12px;
+            background: var(--black);
+            color: var(--white);
+            border: none;
+            border-radius: 6px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
             text-transform: uppercase;
-            letter-spacing: 2px;
             cursor: pointer;
-            margin-top: 8px;
+            margin-top: 4px;
+            transition: background 0.2s;
         }
 
+        .auth-btn:hover { background: #333; }
+
         #auth-error {
+            font-size: 11px;
             color: #d63031;
-            font-size: 12px;
             text-align: center;
-            min-height: 15px;
-            margin-top: 12px;
+            min-height: 16px;
+            margin-top: 4px;
         }
 
         .auth-switch {
             text-align: center;
-            margin-top: 24px;
+            margin-top: 20px;
             font-size: 12px;
-            color: var(--gray);
+            color: #888;
         }
 
         .auth-switch a {
-            color: var(--text);
-            text-decoration: none;
-            font-weight: bold;
+            color: var(--black);
+            font-weight: 600;
             cursor: pointer;
+            text-decoration: underline;
         }
 
-        /* Mobile Responsiveness */
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
-            nav {
-                padding: 16px;
-                flex-direction: column;
-                gap: 16px;
+            nav { padding: 16px 24px; }
+            .hero, .whats-bagged, .how-it-works-body, .meet-founder {
+                grid-template-columns: 1fr;
+                padding: 60px 24px;
+                gap: 40px;
             }
-            .nav-links {
-                gap: 12px;
-                width: 100%;
-                justify-content: center;
-            }
-            .hero {
-                padding: 40px 16px;
-            }
-            .hero-brand {
-                flex-direction: column;
-                gap: 12px;
-            }
-            .hero-title {
-                font-size: 42px;
-                letter-spacing: 4px;
-            }
-            .hero-logo {
-                width: 56px;
-                height: 56px;
-            }
-            .hero-sub {
-                font-size: 18px;
-            }
-            .hero-desc {
-                font-size: 14px;
-            }
-            .hero-actions {
-                flex-direction: column;
-                width: 100%;
-                gap: 12px;
-            }
-            .hero-actions button {
-                width: 100%;
-                padding: 14px;
-            }
-            .auth-modal {
-                padding: 30px 20px;
-                width: 92%;
-                margin: 20px;
-            }
+            .how-it-works { padding: 60px 24px; }
+            footer { flex-direction: column; gap: 12px; text-align: center; }
+            .nav-logo span { font-size: 13px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- NAV -->
     <nav>
         <a href="#" class="nav-logo">
             <img src="icon.png" alt="Bagged">
-            BAGGED
+            <span>Bagged</span>
         </a>
-        <div class="nav-links">
-            <a href="#" class="open-auth-btn" data-mode="login">Sign In</a>
-            <a href="#" class="btn-primary open-auth-btn" data-mode="signup">Get Started</a>
+        <div class="nav-ctas">
+            <a href="#" class="btn-outline-nav open-auth-btn" data-mode="signup">Sign Up</a>
+            <a href="#" class="btn-solid-nav open-auth-btn" data-mode="login">Log In</a>
         </div>
     </nav>
 
-    <div class="hero">
-        <h2 class="hero-sub">Everything you love...</h2>
-        <div class="hero-brand">
-            <img src="icon.png" alt="Bagged Logo" class="hero-logo">
-            <h1 class="hero-title">BAGGED</h1>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-text">
+            <h1>Your taste, your tabs, your wishlist &mdash; all Bagged in one sleek dashboard.</h1>
+            <p>Download Chrome and simplify the way you online shop.</p>
+            <a href="#" class="btn-chrome open-auth-btn" data-mode="signup">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/Google_Chrome_icon_%28February_2022%29.svg/1200px-Google_Chrome_icon_%28February_2022%29.svg.png" alt="Chrome">
+                <span>Download with<br><strong>Chrome Extension</strong></span>
+            </a>
         </div>
-        <p class="hero-desc">Your taste, your tabs, your wishlist—all Bagged up in one sleek simple dashboard.</p>
-        <div class="hero-actions">
-            <button class="btn-primary open-auth-btn" data-mode="signup">Sign Up for Free</button>
-            <button class="btn-outline open-auth-btn" data-mode="login">Sign In</button>
+        <div class="hero-image">
+            <img src="dashboard-preview.png" alt="Bagged Dashboard" onerror="this.parentElement.innerHTML='<div class=\'hero-image-placeholder\'>Add dashboard-preview.png to your folder</div>'">
         </div>
-    </div>
+    </section>
 
+    <!-- WHAT'S BAGGED -->
+    <section class="whats-bagged">
+        <div class="whats-bagged-left">
+            <h2>What's Bagged?</h2>
+            <div class="mockup-card">
+                <img src="extension-mockup.png" alt="Bagged Extension" onerror="this.parentElement.innerHTML='<div class=\'mockup-placeholder\'>extension-mockup.png</div>'">
+            </div>
+        </div>
+        <div class="whats-bagged-right">
+            <h3>The Internet Had One Job. We're Here to Fix It.</h3>
+            <p>Let's be real – online shopping was supposed to make life easier. Instead? You've got 17 tabs open, 4 forgotten carts, 3 "where did I see that again?" moments, and an inbox full of promo codes that may or may not still work.</p>
+            <h4>Enter Bagged</h4>
+            <p>Your one-stop, tab-closing, chaos-calming, "finally-I-can-find-that-thing" shopping assistant.</p>
+            <p>We built Bagged because we were tired of losing track of our stuff. Of switching between stores. Of wishlists that feel more like memory holes. We wanted a place where everything we loved online could live together in harmony — organised, trackable, and shareable. So we made it. And then we gave it a brain.</p>
+            <div class="bagged-helps">
+                <h4>Bagged helps you:</h4>
+                <ul>
+                    <li>Save items from anywhere online.</li>
+                    <li>Organise your dream cart like a digital closet.</li>
+                    <li>Get notified when prices drop (because savings = serotonin).</li>
+                    <li>Share your bags with friends (because who shops alone anymore?).</li>
+                </ul>
+            </div>
+        </div>
+    </section>
 
+    <!-- HOW IT WORKS -->
+    <section class="how-it-works">
+        <div class="how-it-works-header">
+            <img src="icon.png" alt="">
+            <h2>How it works</h2>
+        </div>
+        <div class="how-it-works-body">
+            <div class="steps">
+                <div class="step">
+                    <h3>Download Bagged</h3>
+                    <p>Free on Google Chrome — pin it as an extension to your browser.</p>
+                </div>
+                <div class="step">
+                    <h3>Create Account</h3>
+                    <p>Sign up for free using your name and email address.</p>
+                </div>
+                <div class="step">
+                    <h3>Browse</h3>
+                    <p>Start shopping on any of your favourite stores.</p>
+                </div>
+                <div class="step">
+                    <h3>Bag It</h3>
+                    <p>Found something you like? Not ready to purchase? Create a wishlist and add it to your Bagged account. Never lose or forget about it again.</p>
+                </div>
+            </div>
+            <div class="video-placeholder">
+                <!-- Replace with a real video or GIF later -->
+                <span>demo video</span>
+            </div>
+        </div>
+    </section>
 
+    <!-- MEET THE FOUNDER -->
+    <section class="meet-founder">
+        <div class="founder-photo-wrapper">
+            <img src="founder.jpg" alt="Pam Nagourney, Founder & CEO" class="founder-photo"
+                onerror="this.outerHTML='<div class=\'founder-photo-placeholder\'>Add founder.jpg to your folder</div>'">
+        </div>
+        <div class="founder-text">
+            <h2>Meet the Founder</h2>
+            <p>I created Bagged out of personal necessity. At 36, I've spent the last 14 years working in fashion e-commerce for top luxury companies across New York and London, yet my own online shopping experience hasn't improved in over a decade.</p>
+            <p>I first had the idea at 20, after an exhaustive search for the perfect black bootie — endless tabs open, items scattered across wishlists and shopping bags, only to lose track, close things accidentally, and abandon the search altogether, then start again.</p>
+            <p>Sixteen years later, we have more choice than ever, with social shopping and influencer links adding to the noise, but still no way to organise it all. So I built Bagged: one place to save everything from across the web and social, stay organised, and finally shop the way I want.</p>
+            <div class="founder-signature">
+                Founder &amp; CEO<br>
+                <strong>Pam Nagourney</strong>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer>
-        <div style="margin-bottom: 8px;">&copy; 2026 Bagged. All rights reserved.</div>
-        <a href="privacy.html" style="color: var(--gray); text-decoration: none; font-size: 11px; transition: color 0.2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--gray)'">Privacy Policy</a>
+        <span>&copy; 2026 Bagged. All rights reserved.</span>
+        <a href="privacy.html">Privacy Policy</a>
     </footer>
 
-    <!-- Auth Modal Overlay -->
+    <!-- AUTH MODAL (preserved exactly) -->
     <div class="modal-overlay" id="auth-modal-overlay">
         <div class="auth-modal">
             <button class="close-modal" id="close-modal">&times;</button>
@@ -494,30 +674,25 @@
                 <img src="icon.png" alt="Bagged">
                 <h2 id="auth-title">SIGN IN</h2>
             </div>
-            
             <form class="auth-form" id="auth-form">
                 <div id="auth-name-wrapper">
                     <input type="text" id="auth-first-name" placeholder="first name">
                     <input type="text" id="auth-last-name" placeholder="last name">
                 </div>
                 <input type="email" id="auth-email" placeholder="email address" required>
-                
                 <div class="auth-password-wrapper">
                     <input type="password" id="auth-password" placeholder="password" required>
                     <button type="button" class="toggle-password" id="toggle-auth-password">show</button>
                 </div>
-
                 <div id="auth-confirm-wrapper">
                     <div class="auth-password-wrapper">
                         <input type="password" id="auth-confirm-password" placeholder="confirm password">
                         <button type="button" class="toggle-password" id="toggle-auth-confirm">show</button>
                     </div>
                 </div>
-
                 <button type="submit" class="auth-btn" id="auth-submit-btn">Continue</button>
             </form>
             <div id="auth-error"></div>
-
             <div class="auth-switch">
                 <span id="auth-switch-text">New to Bagged?</span>
                 <a id="auth-switch-link">Create an account</a>
