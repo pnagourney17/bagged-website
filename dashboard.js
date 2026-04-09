@@ -1,4 +1,4 @@
-      const firebaseConfig = {
+const firebaseConfig = {
     apiKey: "AIzaSyA1BJ5_ItJr_S9bExIIz_oaeg-HYDMc7LY",
     authDomain: "bagged-dc0f7.firebaseapp.com",
     projectId: "bagged-dc0f7",
@@ -318,136 +318,111 @@ function saveOrder(uid, boardsData) {
 }
 
 function renderBoardsOverview(container, boardsData, user) {
+    // Search bar
+    const searchWrapper = document.createElement('div');
+    searchWrapper.style.cssText = 'margin-bottom: 28px; position: relative; max-width: 360px;';
+    searchWrapper.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); width:15px; height:15px; pointer-events:none;">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input id="bag-search" type="text" placeholder="search wishlists..." style="width:100%; padding:10px 14px 10px 38px; border:1px solid #eee; border-radius:8px; font-size:13px; font-family:inherit; outline:none; color:#111; background:#fafafa; transition:border-color 0.2s; box-sizing:border-box;">
+    `;
+    container.appendChild(searchWrapper);
+
+    const searchInput = searchWrapper.querySelector('#bag-search');
+    searchInput.addEventListener('focus', () => { searchInput.style.borderColor = '#000'; searchInput.style.background = '#fff'; });
+    searchInput.addEventListener('blur', () => { searchInput.style.borderColor = '#eee'; searchInput.style.background = '#fafafa'; });
+
     const grid = document.createElement('div');
     grid.className = 'boards-grid';
 
-    function rebuildGrid() {
-        grid.innerHTML = '';
-        boardsData.forEach((board, index) => {
-            const card = document.createElement('div');
-            card.className = 'board-card';
+    for (const board of boardsData) {
+        const card = document.createElement('div');
+        card.className = 'board-card';
+        card.dataset.name = board.name.toLowerCase();
 
-            const images = board.items
-                .map(item => item.image)
-                .filter(img => img && img.length > 0)
-                .slice(0, 3);
+        const images = board.items
+            .map(item => item.image)
+            .filter(img => img && img.length > 0)
+            .slice(0, 3);
 
-            let collageHTML = '<div class="board-collage">';
-            if (images.length >= 1) {
-                collageHTML += `<div class="collage-main"><img src="${images[0]}" alt=""></div>`;
-            } else {
-                collageHTML += '<div class="collage-main collage-empty"></div>';
-            }
-            if (images.length >= 2) {
-                collageHTML += `<div><img src="${images[1]}" alt=""></div>`;
-            } else {
-                collageHTML += '<div class="collage-empty"></div>';
-            }
-            if (images.length >= 3) {
-                collageHTML += `<div><img src="${images[2]}" alt=""></div>`;
-            } else {
-                collageHTML += '<div class="collage-empty"></div>';
-            }
-            collageHTML += '</div>';
+        let collageHTML = '<div class="board-collage">';
+        if (images.length >= 1) {
+            collageHTML += `<div class="collage-main"><img src="${images[0]}" alt=""></div>`;
+        } else {
+            collageHTML += '<div class="collage-main collage-empty"></div>';
+        }
+        if (images.length >= 2) {
+            collageHTML += `<div><img src="${images[1]}" alt=""></div>`;
+        } else {
+            collageHTML += '<div class="collage-empty"></div>';
+        }
+        if (images.length >= 3) {
+            collageHTML += `<div><img src="${images[2]}" alt=""></div>`;
+        } else {
+            collageHTML += '<div class="collage-empty"></div>';
+        }
+        collageHTML += '</div>';
 
-            const isFirst = index === 0;
-            const isLast = index === boardsData.length - 1;
+        card.innerHTML = `
+            <div style="position:relative;">
+                ${collageHTML}
+                <button class="delete-board-btn" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.9); border:none; width:24px; height:24px; border-radius:12px; font-size:14px; cursor:pointer; color:#999; display:flex; align-items:center; justify-content:center; z-index:10; transition:all 0.2s;" title="Delete Wishlist">
+                    &times;
+                </button>
+            </div>
+            <div class="board-name">${board.name}</div>
+            <div class="board-count">${board.items.length} item${board.items.length !== 1 ? 's' : ''}</div>
+        `;
 
-            card.innerHTML = `
-                <div style="position:relative;">
-                    ${collageHTML}
-                    <button class="delete-board-btn" style="position:absolute; top:8px; right:8px; background:rgba(255,255,255,0.9); border:none; width:24px; height:24px; border-radius:12px; font-size:14px; cursor:pointer; color:#999; display:flex; align-items:center; justify-content:center; z-index:10; transition:all 0.2s;" title="Delete Wishlist">
-                        &times;
-                    </button>
-                    <!-- Reorder Controls -->
-                    <div class="reorder-controls" style="position:absolute; bottom:8px; left:8px; display:flex; gap:4px; opacity:0; transition:opacity 0.2s; z-index:10;">
-                        <button class="reorder-btn move-first-btn" title="Move to First" style="background:rgba(255,255,255,0.92); border:none; width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>⇤</button>
-                        <button class="reorder-btn move-left-btn" title="Move Left" style="background:rgba(255,255,255,0.92); border:none; width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;" ${isFirst ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>←</button>
-                        <button class="reorder-btn move-right-btn" title="Move Right" style="background:rgba(255,255,255,0.92); border:none; width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;" ${isLast ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>→</button>
-                        <button class="reorder-btn move-last-btn" title="Move to Last" style="background:rgba(255,255,255,0.92); border:none; width:26px; height:26px; border-radius:6px; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center;" ${isLast ? 'disabled style="opacity:0.3; cursor:default;"' : ''}>⇥</button>
-                    </div>
-                </div>
-                <div class="board-name">${board.name}</div>
-                <div class="board-count">${board.items.length} item${board.items.length !== 1 ? 's' : ''}</div>
-            `;
+        const deleteBtn = card.querySelector('.delete-board-btn');
+        deleteBtn.addEventListener('mouseenter', () => { deleteBtn.style.background = '#fff'; deleteBtn.style.color = '#d63031'; deleteBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)'; });
+        deleteBtn.addEventListener('mouseleave', () => { deleteBtn.style.background = 'rgba(255,255,255,0.9)'; deleteBtn.style.color = '#999'; deleteBtn.style.boxShadow = 'none'; });
 
-            // Show reorder controls on hover
-            const collageWrapper = card.querySelector('div[style*="position:relative"]');
-            const reorderControls = card.querySelector('.reorder-controls');
-            collageWrapper.addEventListener('mouseenter', () => { reorderControls.style.opacity = '1'; });
-            collageWrapper.addEventListener('mouseleave', () => { reorderControls.style.opacity = '0'; });
-
-            // Reorder logic
-            card.querySelector('.move-first-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (index === 0) return;
-                boardsData.splice(index, 1);
-                boardsData.unshift(board);
-                saveOrder(user.uid, boardsData);
-                rebuildGrid();
-            });
-            card.querySelector('.move-left-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (index === 0) return;
-                [boardsData[index - 1], boardsData[index]] = [boardsData[index], boardsData[index - 1]];
-                saveOrder(user.uid, boardsData);
-                rebuildGrid();
-            });
-            card.querySelector('.move-right-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (index === boardsData.length - 1) return;
-                [boardsData[index], boardsData[index + 1]] = [boardsData[index + 1], boardsData[index]];
-                saveOrder(user.uid, boardsData);
-                rebuildGrid();
-            });
-            card.querySelector('.move-last-btn').addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (index === boardsData.length - 1) return;
-                boardsData.splice(index, 1);
-                boardsData.push(board);
-                saveOrder(user.uid, boardsData);
-                rebuildGrid();
-            });
-
-            // Open board on click
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.delete-board-btn') || e.target.closest('.reorder-btn')) return;
-                container.innerHTML = '';
-                renderBoardDetail(container, board, user, false);
-            });
-
-            // Delete board
-            const deleteBtn = card.querySelector('.delete-board-btn');
-            deleteBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm(`Are you sure you want to delete your "${board.name}" wishlist? This action cannot be undone.`)) {
-                    card.style.opacity = '0.5';
-                    deleteBtn.style.pointerEvents = 'none';
-                    try {
-                        const boardRef = db.collection('users').doc(user.uid).collection('wishlists').doc(board.name);
-                        const itemsSnap = await boardRef.collection('items').get();
-                        const batch = db.batch();
-                        itemsSnap.forEach(doc => { batch.delete(doc.ref); });
-                        batch.delete(boardRef);
-                        await batch.commit();
-                        loadCloudDashboard(user);
-                    } catch (err) {
-                        console.error("Error deleting wishlist:", err);
-                        alert("Failed to delete wishlist. Please try again.");
-                        card.style.opacity = '1';
-                        deleteBtn.style.pointerEvents = 'auto';
-                    }
-                }
-            });
-
-            grid.appendChild(card);
+        card.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-board-btn')) return;
+            container.innerHTML = '';
+            renderBoardDetail(container, board, user, false);
         });
+
+        deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm(`Are you sure you want to delete your "${board.name}" wishlist? This action cannot be undone.`)) {
+                card.style.opacity = '0.5';
+                deleteBtn.style.pointerEvents = 'none';
+                try {
+                    const boardRef = db.collection('users').doc(user.uid).collection('wishlists').doc(board.name);
+                    const itemsSnap = await boardRef.collection('items').get();
+                    const batch = db.batch();
+                    itemsSnap.forEach(doc => { batch.delete(doc.ref); });
+                    batch.delete(boardRef);
+                    await batch.commit();
+                    loadCloudDashboard(user);
+                } catch (err) {
+                    console.error("Error deleting wishlist:", err);
+                    alert("Failed to delete wishlist. Please try again.");
+                    card.style.opacity = '1';
+                    deleteBtn.style.pointerEvents = 'auto';
+                }
+            }
+        });
+
+        grid.appendChild(card);
     }
 
-    rebuildGrid();
+    // Live search filtering
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.toLowerCase().trim();
+        grid.querySelectorAll('.board-card').forEach(card => {
+            card.style.display = card.dataset.name.includes(query) ? '' : 'none';
+        });
+    });
+
     container.appendChild(grid);
 }
 
+
+    const grid = document.createElement('div');
 
 function renderBoardDetail(container, board, user, isShared) {
     // Header with back button
