@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Bagged",
+  "version": "1.0",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "Icon.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "dashboard.html",
+        "admin.html",
+        "admin.js",
+        "firebase-app.js",
+        "firebase-auth.js",
+        "firebase-firestore.js",
+        "Icon.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}
