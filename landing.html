@@ -183,10 +183,9 @@
         }
 
         .whats-bagged-left h2 {
-            font-family: 'Playfair Display', serif;
-            font-style: italic;
+            font-family: 'Inter', sans-serif;
             font-size: clamp(36px, 5vw, 60px);
-            font-weight: 400;
+            font-weight: 900;
             line-height: 1.1;
             margin-bottom: 40px;
         }
@@ -374,25 +373,73 @@
             line-height: 1.6;
         }
 
-        /* ===== FOOTER ===== */
-        footer {
-            padding: 32px 60px;
-            border-top: 1px solid var(--border);
+        /* ===== BOTTOM CTA ===== */
+        .bottom-cta {
+            padding: 100px 60px;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .bottom-cta-heading {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--light-gray);
-            text-transform: lowercase;
-            letter-spacing: 0.5px;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .bottom-cta-heading img {
+            height: 48px;
+            width: auto;
+        }
+
+        .bottom-cta-heading h2 {
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: clamp(24px, 4vw, 32px);
+            color: var(--black);
+        }
+
+        .btn-solid-large {
+            display: inline-block;
+            padding: 16px 40px;
+            background: var(--black);
+            color: var(--white);
+            border-radius: 40px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn-solid-large:hover {
+            background: #333;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            padding: 40px 60px;
+            background: var(--cream);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            gap: 32px;
+            font-size: 13px;
+            color: var(--black);
+            text-transform: uppercase;
         }
 
         footer a {
-            color: var(--light-gray);
+            color: var(--black);
             text-decoration: none;
-            transition: color 0.2s;
+            transition: opacity 0.2s;
         }
-        footer a:hover { color: var(--black); }
+        footer a:hover { opacity: 0.6; }
 
         /* ===== AUTH MODAL (preserved) ===== */
         .modal-overlay {
@@ -550,7 +597,9 @@
                 gap: 40px;
             }
             .how-it-works { padding: 60px 24px; }
-            footer { flex-direction: column; gap: 12px; text-align: center; }
+            .bottom-cta { padding: 80px 24px; }
+            .bottom-cta-heading { flex-direction: column; text-align: center; gap: 20px; }
+            footer { padding: 32px 24px; flex-direction: column; gap: 16px; align-items: center; }
             .nav-logo span { font-size: 13px; }
         }
     </style>
@@ -662,10 +711,21 @@
         </div>
     </section>
 
+    <!-- BOTTOM CTA -->
+    <section class="bottom-cta">
+        <div class="bottom-cta-heading">
+            <img src="icon.png" alt="Bagged Icon">
+            <h2>Everything you love...Bagged</h2>
+        </div>
+        <a href="#" class="btn-solid-large open-auth-btn" data-mode="signup">JOIN THE WAITLIST</a>
+    </section>
+
     <!-- FOOTER -->
     <footer>
-        <span>&copy; 2026 Bagged. All rights reserved.</span>
-        <a href="privacy.html">Privacy Policy</a>
+        <a href="#">ABOUT</a>
+        <a href="#">CONTACT US</a>
+        <a href="#">TERMS & CONDITIONS</a>
+        <a href="privacy.html">PRIVACY</a>
     </footer>
 
     <!-- AUTH MODAL (preserved exactly) -->
