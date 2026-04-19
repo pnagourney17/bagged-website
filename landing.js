@@ -16,8 +16,21 @@ const auth = firebase.auth();
 // ========== AUTH STATE ==========
 auth.onAuthStateChanged((user) => {
     // If user is already logged in and visits landing page, redirect to dashboard
-    if (user) {
+    // unless they clicked the 'about' button which passes ?view=about
+    if (user && !window.location.search.includes('view=about')) {
         window.location.href = 'dashboard.html';
+    } else if (user) {
+        // Update nav bar so they can navigate back to Dashboard
+        const navCtas = document.querySelector('.nav-ctas');
+        if (navCtas) navCtas.innerHTML = '<a href="dashboard.html" class="btn-solid-nav">Dashboard</a>';
+        
+        // Update bottom CTA button
+        const bottomBtn = document.querySelector('.bottom-cta .btn-solid-large');
+        if (bottomBtn) {
+            bottomBtn.href = "dashboard.html";
+            bottomBtn.classList.remove('open-auth-btn');
+            bottomBtn.innerText = 'GO TO DASHBOARD';
+        }
     }
 });
 
@@ -116,7 +129,7 @@ function friendlyError(code) {
     if (code === 'auth/wrong-password') return 'Incorrect password.';
     if (code === 'auth/user-not-found') return 'No account found with this email.';
     if (code === 'auth/too-many-requests') return 'Too many attempts. Try again later.';
-    return 'An error occurred. Please try again.';
+    return 'Error: ' + (code || 'Unknown') + ' - Please try again.';
 }
 
 // Password Toggle Handlers
