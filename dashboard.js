@@ -754,12 +754,12 @@ async function runAiDiscovery(apiKey, uid) {
 
     const sampleItems = allItems.sort(() => 0.5 - Math.random()).slice(0, 25);
     
-    const promptText = \`
+    const promptText = `
 I am providing a list of luxury fashion items that a user has saved to their online wishlist.
 Based heavily on the style, brands, and categories of these items, recommend 8 SPECIFIC, new luxury fashion items that this user would absolutely love to discover. Make sure they fit the exact aesthetic profile.
 
 User's Saved Items:
-\${sampleItems.join('\n')}
+${sampleItems.join('\n')}
 
 Respond ONLY with a valid JSON array of objects. Do not include markdown formatting or backticks.
 Format:
@@ -771,9 +771,9 @@ Format:
     "query": "Brand Name Specific Product Name"
   }
 ]
-\`;
+`;
 
-    const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${apiKey}\`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -792,16 +792,16 @@ Format:
     const data = await response.json();
     let aiText = data.candidates[0].content.parts[0].text.trim();
     
-    if (aiText.startsWith('\`\`\`json')) aiText = aiText.substring(7);
-    else if (aiText.startsWith('\`\`\`')) aiText = aiText.substring(3);
-    if (aiText.endsWith('\`\`\`')) aiText = aiText.substring(0, aiText.length - 3);
+    if (aiText.startsWith('```json')) aiText = aiText.substring(7);
+    else if (aiText.startsWith('```')) aiText = aiText.substring(3);
+    if (aiText.endsWith('```')) aiText = aiText.substring(0, aiText.length - 3);
 
     const recommendations = JSON.parse(aiText.trim());
 
     if (!Array.isArray(recommendations)) throw new Error("Invalid response format from AI.");
     
     recommendations.forEach(rec => {
-        const searchUrl = \`https://www.google.com/search?tbm=shop&q=\${encodeURIComponent(rec.query || (rec.brand + ' ' + rec.name))}\`;
+        const searchUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(rec.query || (rec.brand + ' ' + rec.name))}`;
         
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -813,19 +813,19 @@ Format:
         card.style.flexDirection = 'column';
         card.style.boxSizing = 'border-box';
         
-        card.innerHTML = \`
+        card.innerHTML = `
             <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-bottom: 24px;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="width: 48px; height: 48px; margin-bottom: 20px;">
                     <circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/>
                 </svg>
-                <div class="brand" style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; font-weight:600;">\${rec.brand}</div>
-                <div class="name" style="font-size:16px; font-weight:600; line-height:1.4; color:#222; text-transform:capitalize;">\${rec.name}</div>
-                <div class="price" style="font-size:13px; font-weight:500; color:#888; margin-top:14px; background:#fff; padding:4px 10px; border-radius:4px; border:1px solid #eee;">Est. \${rec.price}</div>
+                <div class="brand" style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; font-weight:600;">${rec.brand}</div>
+                <div class="name" style="font-size:16px; font-weight:600; line-height:1.4; color:#222; text-transform:capitalize;">${rec.name}</div>
+                <div class="price" style="font-size:13px; font-weight:500; color:#888; margin-top:14px; background:#fff; padding:4px 10px; border-radius:4px; border:1px solid #eee;">Est. ${rec.price}</div>
             </div>
-            <a href="\${searchUrl}" target="_blank" style="background: #000; color: #fff; text-decoration: none; padding: 14px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; display: block; text-align: center; transition: background 0.2s;">
+            <a href="${searchUrl}" target="_blank" style="background: #000; color: #fff; text-decoration: none; padding: 14px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; display: block; text-align: center; transition: background 0.2s;">
                 Search to Buy
             </a>
-        \`;
+        `;
         
         resultsGrid.appendChild(card);
     });
