@@ -752,16 +752,22 @@ async function runAiDiscovery(apiKey, uid) {
         throw new Error("You don't have enough bagged items for the AI to analyze. Add some products to your wishlists first!");
     }
 
-    const sampleItems = allItems.sort(() => 0.5 - Math.random()).slice(0, 25);
+    const sampleItems = allItems.sort(() => 0.5 - Math.random()).slice(0, 30);
     
     const promptText = `
 I am providing a list of luxury fashion items that a user has saved to their online wishlist.
-Based heavily on the style, brands, and categories of these items, recommend 8 SPECIFIC, new luxury fashion items that this user would absolutely love to discover. Make sure they fit the exact aesthetic profile.
+Analyze their style, favored brands, and categories based on these items.
+
+Your goal is to recommend exactly 24 SPECIFIC, new fashion items that this user would absolutely love to discover.
+CRITICAL INSTRUCTIONS:
+1. Do NOT strictly limit yourself to the exact brands provided in the user's list. Determine aesthetically adjacent brands that share a similar vibe (e.g. if they like The Row, explore Khaite, Toteme, or Jil Sander).
+2. Provide a healthy mix of price points, ranging from contemporary luxury (e.g., Staud, Ganni) to high-end luxury, but ensure they fit the exact aesthetic profile of the user.
+3. Ensure every recommendation is a specific, real product currently available in the market. Do not invent items.
 
 User's Saved Items:
 ${sampleItems.join('\n')}
 
-Respond ONLY with a valid JSON array of objects. Do not include markdown formatting or backticks.
+Respond ONLY with a valid JSON array of 24 objects. Do not include markdown formatting or backticks.
 Format:
 [
   {
@@ -773,13 +779,13 @@ Format:
 ]
 `;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             contents: [{ parts: [{ text: promptText }] }],
             generationConfig: {
-                temperature: 0.7
+                temperature: 0.8
             }
         })
     });
@@ -830,6 +836,7 @@ Format:
         resultsGrid.appendChild(card);
     });
 }
+
 
 // Settings & Support Modal
 const settingsBtn = document.getElementById('settings-support-btn');
