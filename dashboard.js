@@ -648,6 +648,189 @@ document.getElementById('sidebar-signout').addEventListener('click', (e) => {
     });
 });
 
+// ========== DISCOVER (AI RECOMMENDATIONS) ==========
+const navHome = document.querySelector('.sidebar-nav a[href="dashboard.html"]'); 
+const navDiscover = document.getElementById('nav-discover');
+const bagsContainer = document.getElementById('bags-container');
+const discoverContainer = document.getElementById('discover-container');
+
+// Elements
+const apiKeyInput = document.getElementById('discover-api-key');
+const saveKeyBtn = document.getElementById('discover-save-key-btn');
+const actionArea = document.getElementById('discover-action-area');
+const generateBtn = document.getElementById('generate-discover-btn');
+const loadingText = document.getElementById('discover-loading');
+const resultsGrid = document.getElementById('discover-results-grid');
+
+function switchTab(tab) {
+    if (tab === 'home') {
+        if(bagsContainer) bagsContainer.style.display = 'block';
+        if(discoverContainer) discoverContainer.style.display = 'none';
+        if(navHome) navHome.classList.add('active');
+        if(navDiscover) navDiscover.classList.remove('active');
+    } else {
+        if(bagsContainer) bagsContainer.style.display = 'none';
+        if(discoverContainer) discoverContainer.style.display = 'block';
+        if(navHome) navHome.classList.remove('active');
+        if(navDiscover) navDiscover.classList.add('active');
+        checkApiSetup();
+    }
+}
+
+if (navHome && navDiscover) {
+    navHome.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.history.replaceState(null, '', 'dashboard.html');
+        switchTab('home');
+    });
+
+    navDiscover.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchTab('discover');
+    });
+}
+
+function checkApiSetup() {
+    if(!apiKeyInput) return;
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) {
+        apiKeyInput.value = savedKey;
+        actionArea.style.display = 'block';
+    }
+}
+
+if (saveKeyBtn) {
+    saveKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('gemini_api_key', key);
+            saveKeyBtn.innerText = 'Saved!';
+            actionArea.style.display = 'block';
+            setTimeout(() => saveKeyBtn.innerText = 'Save Key', 2000);
+        }
+    });
+}
+
+if (generateBtn) {
+    generateBtn.addEventListener('click', async () => {
+        const apiKey = localStorage.getItem('gemini_api_key');
+        if (!apiKey) return alert("Please save your API key first.");
+        
+        generateBtn.disabled = true;
+        generateBtn.style.opacity = '0.5';
+        loadingText.style.display = 'block';
+        resultsGrid.innerHTML = '';
+        
+        try {
+            await runAiDiscovery(apiKey, auth.currentUser.uid);
+        } catch (e) {
+            console.error("AI Error:", e);
+            alert("Error generating recommendations: " + e.message);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.style.opacity = '1';
+            loadingText.style.display = 'none';
+        }
+    });
+}
+
+async function runAiDiscovery(apiKey, uid) {
+    const wishlistsSnapshot = await db.collection('users').doc(uid).collection('wishlists').get();
+    
+    let allItems = [];
+    for (const doc of wishlistsSnapshot.docs) {
+        const itemsSnap = await db.collection('users').doc(uid).collection('wishlists').doc(doc.id).collection('items').get();
+        itemsSnap.forEach(itemDoc => {
+            const data = itemDoc.data();
+            if (data.name && data.brand) {
+                allItems.push(`${data.brand} - ${data.name}`);
+            }
+        });
+    }
+
+    if (allItems.length === 0) {
+        throw new Error("You don't have enough bagged items for the AI to analyze. Add some products to your wishlists first!");
+    }
+
+    const sampleItems = allItems.sort(() => 0.5 - Math.random()).slice(0, 25);
+    
+    const promptText = \`
+I am providing a list of luxury fashion items that a user has saved to their online wishlist.
+Based heavily on the style, brands, and categories of these items, recommend 8 SPECIFIC, new luxury fashion items that this user would absolutely love to discover. Make sure they fit the exact aesthetic profile.
+
+User's Saved Items:
+\${sampleItems.join('\n')}
+
+Respond ONLY with a valid JSON array of objects. Do not include markdown formatting or backticks.
+Format:
+[
+  {
+    "brand": "Brand Name",
+    "name": "Specific Product Name",
+    "price": "$XXX",
+    "query": "Brand Name Specific Product Name"
+  }
+]
+\`;
+
+    const response = await fetch(\`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${apiKey}\`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: promptText }] }],
+            generationConfig: {
+                temperature: 0.7
+            }
+        })
+    });
+
+    if (!response.ok) {
+        const errJson = await response.json().catch(()=>({}));
+        throw new Error(errJson.error?.message || "Failed to contact Gemini API. Please check your API key.");
+    }
+
+    const data = await response.json();
+    let aiText = data.candidates[0].content.parts[0].text.trim();
+    
+    if (aiText.startsWith('\`\`\`json')) aiText = aiText.substring(7);
+    else if (aiText.startsWith('\`\`\`')) aiText = aiText.substring(3);
+    if (aiText.endsWith('\`\`\`')) aiText = aiText.substring(0, aiText.length - 3);
+
+    const recommendations = JSON.parse(aiText.trim());
+
+    if (!Array.isArray(recommendations)) throw new Error("Invalid response format from AI.");
+    
+    recommendations.forEach(rec => {
+        const searchUrl = \`https://www.google.com/search?tbm=shop&q=\${encodeURIComponent(rec.query || (rec.brand + ' ' + rec.name))}\`;
+        
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.style.background = '#fafafa';
+        card.style.border = '1px solid #eee';
+        card.style.borderRadius = '12px';
+        card.style.padding = '24px';
+        card.style.display = 'flex';
+        card.style.flexDirection = 'column';
+        card.style.boxSizing = 'border-box';
+        
+        card.innerHTML = \`
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; margin-bottom: 24px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="width: 48px; height: 48px; margin-bottom: 20px;">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8l4 4-4 4M8 12h8"/>
+                </svg>
+                <div class="brand" style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; font-weight:600;">\${rec.brand}</div>
+                <div class="name" style="font-size:16px; font-weight:600; line-height:1.4; color:#222; text-transform:capitalize;">\${rec.name}</div>
+                <div class="price" style="font-size:13px; font-weight:500; color:#888; margin-top:14px; background:#fff; padding:4px 10px; border-radius:4px; border:1px solid #eee;">Est. \${rec.price}</div>
+            </div>
+            <a href="\${searchUrl}" target="_blank" style="background: #000; color: #fff; text-decoration: none; padding: 14px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; display: block; text-align: center; transition: background 0.2s;">
+                Search to Buy
+            </a>
+        \`;
+        
+        resultsGrid.appendChild(card);
+    });
+}
+
 // Settings & Support Modal
 const settingsBtn = document.getElementById('settings-support-btn');
 const settingsOverlay = document.getElementById('settings-modal-overlay');
