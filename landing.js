@@ -19,18 +19,6 @@ auth.onAuthStateChanged((user) => {
     // unless they clicked the 'about' button which passes ?view=about
     if (user && !window.location.search.includes('view=about')) {
         window.location.href = 'dashboard.html';
-    } else if (user) {
-        // Update nav bar so they can navigate back to Dashboard
-        const navCtas = document.querySelector('.nav-ctas');
-        if (navCtas) navCtas.innerHTML = '<a href="dashboard.html" class="btn-solid-nav">Dashboard</a>';
-        
-        // Update bottom CTA button
-        const bottomBtn = document.querySelector('.bottom-cta .btn-solid-large');
-        if (bottomBtn) {
-            bottomBtn.href = "dashboard.html";
-            bottomBtn.classList.remove('open-auth-btn');
-            bottomBtn.innerText = 'GO TO DASHBOARD';
-        }
     }
 });
 
