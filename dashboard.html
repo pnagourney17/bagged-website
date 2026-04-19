@@ -587,9 +587,9 @@
                 <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 <span>home</span>
             </a>
-            <a class="nav-icon" href="#" title="Explore">
+            <a class="nav-icon" href="#" id="nav-discover" title="Discover">
                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <span>explore</span>
+                <span>discover</span>
             </a>
             <a class="nav-icon" href="#" id="nav-create-wishlist" title="Create a Wishlist">
                 <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -641,6 +641,29 @@
 
         <div id="bags-container">
             <p style="text-transform: lowercase; color: #888;">syncing with cloud...</p>
+        </div>
+        
+        <div id="discover-container" style="display: none;">
+            <div style="margin-bottom: 30px;">
+                <h2 style="font-size: 24px; font-weight: 600; text-transform: capitalize; margin-bottom: 8px;">Discover</h2>
+                <p style="color: #888; font-size: 13px;">AI recommendations based on your unique taste profile.</p>
+            </div>
+            
+            <div id="discover-api-setup" style="background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 24px; max-width: 500px; margin-bottom: 30px;">
+                <h3 style="font-size: 14px; margin: 0 0 12px 0;">Setup AI Engine</h3>
+                <p style="font-size: 12px; color: #555; line-height: 1.5; margin-bottom: 16px;">To generate live recommendations, please enter a valid Google Gemini API Key. This key is stored securely in your browser's local storage.</p>
+                <input type="password" id="discover-api-key" placeholder="Enter Gemini API Key..." style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 12px;">
+                <button id="discover-save-key-btn" style="background: #000; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 12px; cursor: pointer;">Save Key</button>
+            </div>
+
+            <div id="discover-action-area" style="display: none;">
+                <button id="generate-discover-btn" style="background: #000; color: #fff; border: none; padding: 14px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Generate New Recommendations</button>
+                <div id="discover-loading" style="display: none; margin-top: 16px; color: #888; font-size: 13px;">Analyzing your collections and consulting the AI...</div>
+            </div>
+
+            <div id="discover-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; margin-top: 40px;">
+                <!-- AI cards go here -->
+            </div>
         </div>
     </div>
 
