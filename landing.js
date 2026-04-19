@@ -110,7 +110,7 @@ authSwitchLink.addEventListener('click', () => {
 });
 
 function friendlyError(code) {
-    if (code === 'auth/email-already-in-use') return 'Email already registered. Try signing in.';
+    if (code === 'auth/email-already-in-use') return 'You already have an account, <a href="#" id="error-login-link" style="text-decoration: underline; font-weight: 600; color: inherit;">log in here</a>';
     if (code === 'auth/invalid-email') return 'Please enter a valid email address.';
     if (code === 'auth/weak-password') return 'Password must be at least 6 characters.';
     if (code === 'auth/wrong-password') return 'Incorrect password.';
@@ -189,7 +189,7 @@ authForm.addEventListener('submit', (e) => {
             })
             .catch(error => {
                 console.error("Login err:", error);
-                authError.innerText = friendlyError(error.code);
+                authError.innerHTML = friendlyError(error.code);
                 authSubmitBtn.innerText = oldText;
                 authSubmitBtn.disabled = false;
             });
@@ -224,9 +224,17 @@ authForm.addEventListener('submit', (e) => {
             .catch(error => {
                 console.error("Signup err:", error);
                 authError.style.color = '#d63031';
-                authError.innerText = friendlyError(error.code);
+                authError.innerHTML = friendlyError(error.code);
                 authSubmitBtn.innerText = oldText;
                 authSubmitBtn.disabled = false;
             });
+    }
+});
+
+// Event delegation for auth error links
+authError.addEventListener('click', (e) => {
+    if (e.target.id === 'error-login-link') {
+        e.preventDefault();
+        authSwitchLink.click();
     }
 });
