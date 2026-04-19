@@ -33,6 +33,9 @@ const authSwitchText = document.getElementById('auth-switch-text');
 const authSwitchLink = document.getElementById('auth-switch-link');
 const authError = document.getElementById('auth-error');
 const authConfirmWrapper = document.getElementById('auth-confirm-wrapper');
+const authNameWrapper = document.getElementById('auth-name-wrapper');
+const authFirstName = document.getElementById('auth-first-name');
+const authLastName = document.getElementById('auth-last-name');
 const authConfirmInput = document.getElementById('auth-confirm-password');
 const togglePasswordBtn = document.getElementById('toggle-auth-password');
 const toggleConfirmBtn = document.getElementById('toggle-auth-confirm');
@@ -44,6 +47,8 @@ function openModal(mode) {
     authError.innerText = '';
     document.getElementById('auth-email').value = '';
     document.getElementById('auth-password').value = '';
+    authFirstName.value = '';
+    authLastName.value = '';
     authConfirmInput.value = '';
     
     // Reset toggles
@@ -66,14 +71,20 @@ function updateModalUI() {
         authSwitchText.innerText = 'New to Bagged?';
         authSwitchLink.innerText = 'Create an account';
         authConfirmWrapper.classList.remove('show');
+        authNameWrapper.classList.remove('show');
         authConfirmInput.removeAttribute('required');
+        authFirstName.removeAttribute('required');
+        authLastName.removeAttribute('required');
     } else {
         authTitle.innerText = 'CREATE ACCOUNT';
         authSubmitBtn.innerText = 'SIGN UP';
         authSwitchText.innerText = 'Already have an account?';
         authSwitchLink.innerText = 'Sign in';
         authConfirmWrapper.classList.add('show');
+        authNameWrapper.classList.add('show');
         authConfirmInput.setAttribute('required', 'true');
+        authFirstName.setAttribute('required', 'true');
+        authLastName.setAttribute('required', 'true');
     }
 }
 
@@ -124,6 +135,36 @@ function handlePasswordToggle(btn, input) {
 togglePasswordBtn.addEventListener('click', () => handlePasswordToggle(togglePasswordBtn, document.getElementById('auth-password')));
 toggleConfirmBtn.addEventListener('click', () => handlePasswordToggle(toggleConfirmBtn, authConfirmInput));
 
+// ========== MAILCHIMP CONFIG ==========
+// Uses JSONP to avoid CORS — no Zapier or server needed
+function addToMailchimp(firstName, lastName, email) {
+    const callbackName = 'mcCallback_' + Date.now();
+    const url = 'https://shop-bagged.us19.list-manage.com/subscribe/post-json'
+        + '?u=0da92e32a8c9e5ee0c4f11eb8'
+        + '&id=b0d7479011'
+        + '&f_id=0096c2e1f0'
+        + '&EMAIL=' + encodeURIComponent(email)
+        + '&FNAME=' + encodeURIComponent(firstName)
+        + '&LNAME=' + encodeURIComponent(lastName)
+        + '&b_0da92e32a8c9e5ee0c4f11eb8_b0d7479011='  // honeypot — must be empty
+        + '&c=' + callbackName;
+
+    window[callbackName] = function(data) {
+        if (data.result === 'success') {
+            console.log('Mailchimp: added to waitlist ✓');
+        } else {
+            // Already subscribed is fine — not a real error
+            console.warn('Mailchimp:', data.msg);
+        }
+        delete window[callbackName];
+    };
+
+    const script = document.createElement('script');
+    script.src = url;
+    document.body.appendChild(script);
+    setTimeout(() => script.remove(), 5000);
+}
+
 // Form Submit
 authForm.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -153,12 +194,36 @@ authForm.addEventListener('submit', (e) => {
                 authSubmitBtn.disabled = false;
             });
     } else {
+        const firstName = authFirstName.value.trim();
+        const lastName = authLastName.value.trim();
+
         auth.createUserWithEmailAndPassword(email, password)
-            .then(() => {
-                // onAuthStateChanged will handle redirect
+            .then((userCredential) => {
+                const user = userCredential.user;
+
+                // 1. Set display name
+                return user.updateProfile({
+                    displayName: `${firstName} ${lastName}`.trim()
+                }).then(() => user);
+            })
+            .then((user) => {
+                // 2. Send Firebase email verification
+                user.sendEmailVerification().catch(err =>
+                    console.warn('Email verification send error:', err)
+                );
+
+                // 3. Add to Mailchimp list
+                addToMailchimp(firstName, lastName, email);
+
+                // 5. Show confirmation message before redirecting
+                authError.style.color = '#27ae60';
+                authError.innerText = `Welcome, ${firstName}! Check your inbox to verify your email.`;
+
+                // onAuthStateChanged will redirect after a short delay
             })
             .catch(error => {
                 console.error("Signup err:", error);
+                authError.style.color = '#d63031';
                 authError.innerText = friendlyError(error.code);
                 authSubmitBtn.innerText = oldText;
                 authSubmitBtn.disabled = false;
