@@ -78,7 +78,7 @@ function updateModalUI() {
         authLastName.removeAttribute('required');
     } else {
         authTitle.innerText = 'CREATE ACCOUNT';
-        authSubmitBtn.innerText = 'SIGN UP';
+        authSubmitBtn.innerText = 'JOIN THE WAITLIST';
         authSwitchText.innerText = 'Already have an account?';
         authSwitchLink.innerText = 'Sign in';
         authConfirmWrapper.classList.add('show');
