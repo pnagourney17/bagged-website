@@ -1,0 +1,26 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "admin.html",
+      "admin.js",
+      "background.js",
+      "content.js",
+      "dashboard.html",
+      "dashboard.js",
+      "manifest.json",
+      "popup.html",
+      "popup.js",
+      "firebase-firestore.js"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/landing.html"
+      }
+    ]
+  }
+}

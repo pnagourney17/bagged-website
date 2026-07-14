@@ -580,12 +580,14 @@
 <body>
     <div class="sidebar">
         <div class="sidebar-logo">
-            <img src="Icon.png" alt="Bagged">
+            <a href="https://shop-bagged.com" target="_blank" title="Go to shop-bagged.com">
+                <img src="icon.png" alt="Bagged">
+            </a>
         </div>
         <div class="sidebar-nav">
-            <a class="nav-icon active" href="dashboard.html" title="Home">
+            <a class="nav-icon active" href="dashboard.html" title="Wishlists">
                 <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span>home</span>
+                <span>wishlists</span>
             </a>
             <a class="nav-icon" href="#" id="nav-discover" title="Discover">
                 <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -618,7 +620,7 @@
             <div id="cart-widget" style="position: relative;">
                 <button id="cart-toggle"
                     style="background: none; border: 1px solid #eee; padding: 10px 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 12px; text-transform: lowercase; letter-spacing: 1px; border-radius: 4px;">
-                    <img src="Icon.png" alt="" style="width: 16px; height: 16px;">
+                    <img src="icon.png" alt="" style="width: 16px; height: 16px;">
                     <span>checkout</span>
                     <span id="cart-count"
                         style="background: black; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px;">0</span>
@@ -646,7 +648,7 @@
         <div id="discover-container" style="display: none;">
             <div style="margin-bottom: 30px;">
                 <h2 style="font-size: 24px; font-weight: 600; text-transform: capitalize; margin-bottom: 8px;">Discover</h2>
-                <p style="color: #888; font-size: 13px;">AI recommendations based on your unique taste profile.</p>
+                <p style="color: #888; font-size: 13px;">Deep AI recommendations based on your unique taste profile.</p>
             </div>
             
             <div id="discover-api-setup" style="background: #fafafa; border: 1px solid #eee; border-radius: 12px; padding: 24px; max-width: 500px; margin-bottom: 30px;">
@@ -657,8 +659,8 @@
             </div>
 
             <div id="discover-action-area" style="display: none;">
-                <button id="generate-discover-btn" style="background: #000; color: #fff; border: none; padding: 14px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Generate New Recommendations</button>
-                <div id="discover-loading" style="display: none; margin-top: 16px; color: #888; font-size: 13px;">Analyzing your collections and consulting the AI...</div>
+                <button id="generate-discover-btn" style="background: #000; color: #fff; border: none; padding: 14px 24px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">Generate Deep Recommendations</button>
+                <div id="discover-loading" style="display: none; margin-top: 16px; color: #888; font-size: 13px;">Analyzing your bags and searching adjacent brands...</div>
             </div>
 
             <div id="discover-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; margin-top: 40px;">
@@ -670,7 +672,7 @@
     <!-- Auth gate (shown when not logged in) -->
     <div id="dashboard-login-gate" style="display: none;">
         <div class="gate-logo">
-            <img src="Icon.png" alt="Bagged">
+            <img src="icon.png" alt="Bagged">
             <h2>BAGGED</h2>
         </div>
         <p>sign in to view your collections</p>
