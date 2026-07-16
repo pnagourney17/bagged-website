@@ -546,19 +546,11 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             if (item.size && !item.sizes.includes(item.size)) {
                 options.push(`<option value="${item.size}" selected>${item.size}</option>`);
             }
-            options.push('<option value="custom_input">Custom...</option>');
             sizeElement = `
                 <div class="size-edit-container" style="flex: 1; position: relative;">
                     <select class="dashboard-size-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
                         ${options.join('')}
                     </select>
-                    <input type="text" class="dashboard-size-input" value="${item.size || ''}" placeholder="Size" style="display: none; width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
-                </div>
-            `;
-        } else {
-            sizeElement = `
-                <div style="flex: 1;">
-                    <input type="text" class="dashboard-size-input" value="${item.size || ''}" placeholder="Size" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
                 </div>
             `;
         }
@@ -578,19 +570,11 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             if (item.color && !item.colors.includes(item.color)) {
                 options.push(`<option value="${item.color}" selected>${item.color}</option>`);
             }
-            options.push('<option value="custom_input">Custom...</option>');
             colorElement = `
                 <div class="color-edit-container" style="flex: 1; position: relative;">
                     <select class="dashboard-color-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
                         ${options.join('')}
                     </select>
-                    <input type="text" class="dashboard-color-input" value="${item.color || ''}" placeholder="Colour" style="display: none; width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
-                </div>
-            `;
-        } else {
-            colorElement = `
-                <div style="flex: 1;">
-                    <input type="text" class="dashboard-color-input" value="${item.color || ''}" placeholder="Colour" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
                 </div>
             `;
         }
@@ -634,64 +618,19 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     };
 
     if (!isSharedView) {
-        // Size listeners
+        // Size listener
         const sizeSelect = card.querySelector('.dashboard-size-select');
-        const sizeInput = card.querySelector('.dashboard-size-input');
-
-        if (sizeSelect && sizeInput) {
+        if (sizeSelect) {
             sizeSelect.addEventListener('change', () => {
-                if (sizeSelect.value === 'custom_input') {
-                    sizeSelect.style.display = 'none';
-                    sizeInput.style.display = 'block';
-                    sizeInput.focus();
-                } else {
-                    updateItem({ size: sizeSelect.value });
-                }
-            });
-            sizeInput.addEventListener('change', () => {
-                updateItem({ size: sizeInput.value.trim() });
-            });
-            sizeInput.addEventListener('blur', () => {
-                if (sizeInput.value.trim() === '' && sizeSelect.options.length > 2) {
-                    // Switch back to select if cleared and select has options
-                    sizeInput.style.display = 'none';
-                    sizeSelect.style.display = 'block';
-                    sizeSelect.value = '';
-                }
-            });
-        } else if (sizeInput) {
-            sizeInput.addEventListener('change', () => {
-                updateItem({ size: sizeInput.value.trim() });
+                updateItem({ size: sizeSelect.value });
             });
         }
 
-        // Color listeners
+        // Color listener
         const colorSelect = card.querySelector('.dashboard-color-select');
-        const colorInput = card.querySelector('.dashboard-color-input');
-
-        if (colorSelect && colorInput) {
+        if (colorSelect) {
             colorSelect.addEventListener('change', () => {
-                if (colorSelect.value === 'custom_input') {
-                    colorSelect.style.display = 'none';
-                    colorInput.style.display = 'block';
-                    colorInput.focus();
-                } else {
-                    updateItem({ color: colorSelect.value });
-                }
-            });
-            colorInput.addEventListener('change', () => {
-                updateItem({ color: colorInput.value.trim() });
-            });
-            colorInput.addEventListener('blur', () => {
-                if (colorInput.value.trim() === '' && colorSelect.options.length > 2) {
-                    colorInput.style.display = 'none';
-                    colorSelect.style.display = 'block';
-                    colorSelect.value = '';
-                }
-            });
-        } else if (colorInput) {
-            colorInput.addEventListener('change', () => {
-                updateItem({ color: colorInput.value.trim() });
+                updateItem({ color: colorSelect.value });
             });
         }
 

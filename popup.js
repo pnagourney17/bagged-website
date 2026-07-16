@@ -162,27 +162,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Size & Colour selector elements
     const productOptions = document.getElementById('product-options');
+    const sizeBlock = document.getElementById('size-block');
     const sizeSelector = document.getElementById('size-selector');
-    const sizeInput = document.getElementById('size-input');
+    const colourBlock = document.getElementById('colour-block');
     const colourSelector = document.getElementById('colour-selector');
-    const colourInput = document.getElementById('colour-input');
-
-    // Switch to manual input when "Custom..." is selected
-    sizeSelector.addEventListener('change', () => {
-        if (sizeSelector.value === 'custom_input') {
-            sizeSelector.style.display = 'none';
-            sizeInput.style.display = 'block';
-            sizeInput.focus();
-        }
-    });
-
-    colourSelector.addEventListener('change', () => {
-        if (colourSelector.value === 'custom_input') {
-            colourSelector.style.display = 'none';
-            colourInput.style.display = 'block';
-            colourInput.focus();
-        }
-    });
 
     function toProperCase(str) {
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
@@ -221,34 +204,34 @@ document.addEventListener('DOMContentLoaded', function () {
                     window.currentProduct = response;
 
                     // Populate sizes
+                    let showSizes = false;
                     if (response.sizes && response.sizes.length > 0) {
                         sizeSelector.innerHTML = '<option value="">Select Size</option>' + 
-                            response.sizes.map(s => `<option value="${s}">${s}</option>`).join('') +
-                            '<option value="custom_input">Custom...</option>';
-                        sizeSelector.style.display = 'block';
-                        sizeInput.style.display = 'none';
-                        sizeInput.value = '';
+                            response.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+                        sizeBlock.style.display = 'flex';
+                        showSizes = true;
                     } else {
-                        sizeSelector.style.display = 'none';
-                        sizeInput.style.display = 'block';
-                        sizeInput.value = '';
+                        sizeBlock.style.display = 'none';
+                        sizeSelector.innerHTML = '';
                     }
 
                     // Populate colours
+                    let showColours = false;
                     if (response.colors && response.colors.length > 0) {
                         colourSelector.innerHTML = '<option value="">Select Colour</option>' + 
-                            response.colors.map(c => `<option value="${c}">${c}</option>`).join('') +
-                            '<option value="custom_input">Custom...</option>';
-                        colourSelector.style.display = 'block';
-                        colourInput.style.display = 'none';
-                        colourInput.value = '';
+                            response.colors.map(c => `<option value="${c}">${c}</option>`).join('');
+                        colourBlock.style.display = 'flex';
+                        showColours = true;
                     } else {
-                        colourSelector.style.display = 'none';
-                        colourInput.style.display = 'block';
-                        colourInput.value = '';
+                        colourBlock.style.display = 'none';
+                        colourSelector.innerHTML = '';
                     }
 
-                    productOptions.style.display = 'flex';
+                    if (showSizes || showColours) {
+                        productOptions.style.display = 'flex';
+                    } else {
+                        productOptions.style.display = 'none';
+                    }
                 }
             });
         }, 300);
@@ -299,17 +282,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Get selected size & color values
         let finalSize = '';
-        if (sizeSelector.style.display !== 'none' && sizeSelector.value !== 'custom_input') {
+        if (sizeBlock.style.display !== 'none') {
             finalSize = sizeSelector.value;
-        } else {
-            finalSize = sizeInput.value.trim();
         }
 
         let finalColour = '';
-        if (colourSelector.style.display !== 'none' && colourSelector.value !== 'custom_input') {
+        if (colourBlock.style.display !== 'none') {
             finalColour = colourSelector.value;
-        } else {
-            finalColour = colourInput.value.trim();
         }
 
         try {
