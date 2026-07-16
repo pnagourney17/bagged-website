@@ -161,13 +161,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const bagSelect = document.getElementById('bag-selector');
     const addBagBtn = document.getElementById('add-bag-btn');
 
-    // Size & Colour selector elements
-    const productOptions = document.getElementById('product-options');
-    const sizeBlock = document.getElementById('size-block');
-    const sizeSelector = document.getElementById('size-selector');
-    const colourBlock = document.getElementById('colour-block');
-    const colourSelector = document.getElementById('colour-selector');
-
     function toProperCase(str) {
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
@@ -203,36 +196,6 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('product-name').innerText = toProperCase(response.name);
                     document.getElementById('product-price').innerText = response.price;
                     window.currentProduct = response;
-
-                    // Populate sizes
-                    let showSizes = false;
-                    if (response.sizes && response.sizes.length > 0) {
-                        sizeSelector.innerHTML = '<option value="">Select Size</option>' + 
-                            response.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-                        sizeBlock.style.display = 'flex';
-                        showSizes = true;
-                    } else {
-                        sizeBlock.style.display = 'none';
-                        sizeSelector.innerHTML = '';
-                    }
-
-                    // Populate colours
-                    let showColours = false;
-                    if (response.colors && response.colors.length > 0) {
-                        colourSelector.innerHTML = '<option value="">Select Colour</option>' + 
-                            response.colors.map(c => `<option value="${c}">${c}</option>`).join('');
-                        colourBlock.style.display = 'flex';
-                        showColours = true;
-                    } else {
-                        colourBlock.style.display = 'none';
-                        colourSelector.innerHTML = '';
-                    }
-
-                    if (showSizes || showColours) {
-                        productOptions.style.display = 'flex';
-                    } else {
-                        productOptions.style.display = 'none';
-                    }
                 }
             });
         }, 300);
@@ -281,22 +244,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!user || !window.currentProduct) return;
         const selectedBag = bagSelect.value || "General";
 
-        // Get selected size & color values
-        let finalSize = '';
-        if (sizeBlock.style.display !== 'none') {
-            finalSize = sizeSelector.value;
-        }
-
-        let finalColour = '';
-        if (colourBlock.style.display !== 'none') {
-            finalColour = colourSelector.value;
-        }
-
         try {
             await db.collection('users').doc(user.uid).collection('wishlists').doc(selectedBag).collection('items').add({
                 ...window.currentProduct,
-                size: finalSize,
-                color: finalColour,
+                size: "",
+                color: "",
                 sizes: window.currentProduct.sizes || [],
                 colors: window.currentProduct.colors || [],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
