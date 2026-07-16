@@ -155,6 +155,7 @@ document.getElementById('sign-out-btn').addEventListener('click', () => {
 });
 
 // ========== APP LOGIC ==========
+// Trigger GitHub Actions deploy test
 document.addEventListener('DOMContentLoaded', function () {
     const saveBtn = document.getElementById('save-btn');
     const bagSelect = document.getElementById('bag-selector');
