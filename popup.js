@@ -247,8 +247,8 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             await db.collection('users').doc(user.uid).collection('wishlists').doc(selectedBag).collection('items').add({
                 ...window.currentProduct,
-                size: "",
-                color: "",
+                size: window.currentProduct.activeSize || "",
+                color: window.currentProduct.activeColor || "",
                 sizes: window.currentProduct.sizes || [],
                 colors: window.currentProduct.colors || [],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()

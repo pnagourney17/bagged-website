@@ -553,6 +553,8 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
+        } else if (item.size) {
+            sizeElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Size: ${item.size}</span>`;
         }
     }
 
@@ -577,6 +579,8 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
+        } else if (item.color) {
+            colorElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Col: ${item.color}</span>`;
         }
     }
 
