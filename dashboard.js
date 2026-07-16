@@ -174,7 +174,10 @@ function updateCartDropdown() {
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 11px; color: #888; text-transform: lowercase;">${item.brand}</div>
                     <div style="font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
-                    <div style="font-size: 12px; font-weight: bold;">${item.price}</div>
+                    <div style="font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <span>${item.price}</span>
+                        ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
+                    </div>
                 </div>
                 <button class="cart-remove-btn" data-id="${item.id}" style="background: none; border: none; cursor: pointer; color: #999; font-size: 16px; padding: 5px;">×</button>
             </div>
@@ -529,62 +532,209 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     card.style.textTransform = "capitalize";
     const productUrl = item.url || '#';
 
+    // Build size element
+    let sizeElement = '';
+    if (isSharedView) {
+        sizeElement = item.size ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Size: ${item.size}</span>` : '';
+    } else {
+        if (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) {
+            let options = ['<option value="">Size</option>'];
+            item.sizes.forEach(s => {
+                const selected = item.size === s ? 'selected' : '';
+                options.push(`<option value="${s}" ${selected}>${s}</option>`);
+            });
+            if (item.size && !item.sizes.includes(item.size)) {
+                options.push(`<option value="${item.size}" selected>${item.size}</option>`);
+            }
+            options.push('<option value="custom_input">Custom...</option>');
+            sizeElement = `
+                <div class="size-edit-container" style="flex: 1; position: relative;">
+                    <select class="dashboard-size-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
+                        ${options.join('')}
+                    </select>
+                    <input type="text" class="dashboard-size-input" value="${item.size || ''}" placeholder="Size" style="display: none; width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
+                </div>
+            `;
+        } else {
+            sizeElement = `
+                <div style="flex: 1;">
+                    <input type="text" class="dashboard-size-input" value="${item.size || ''}" placeholder="Size" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
+                </div>
+            `;
+        }
+    }
+
+    // Build color element
+    let colorElement = '';
+    if (isSharedView) {
+        colorElement = item.color ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Col: ${item.color}</span>` : '';
+    } else {
+        if (item.colors && Array.isArray(item.colors) && item.colors.length > 0) {
+            let options = ['<option value="">Colour</option>'];
+            item.colors.forEach(c => {
+                const selected = item.color === c ? 'selected' : '';
+                options.push(`<option value="${c}" ${selected}>${c}</option>`);
+            });
+            if (item.color && !item.colors.includes(item.color)) {
+                options.push(`<option value="${item.color}" selected>${item.color}</option>`);
+            }
+            options.push('<option value="custom_input">Custom...</option>');
+            colorElement = `
+                <div class="color-edit-container" style="flex: 1; position: relative;">
+                    <select class="dashboard-color-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
+                        ${options.join('')}
+                    </select>
+                    <input type="text" class="dashboard-color-input" value="${item.color || ''}" placeholder="Colour" style="display: none; width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
+                </div>
+            `;
+        } else {
+            colorElement = `
+                <div style="flex: 1;">
+                    <input type="text" class="dashboard-color-input" value="${item.color || ''}" placeholder="Colour" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; box-sizing: border-box;">
+                </div>
+            `;
+        }
+    }
+
+    const optionsHTML = (sizeElement || colorElement) ? `
+        <div class="options-row" style="display: flex; gap: 8px; margin: 4px 0 10px 0; align-items: center; justify-content: flex-start;">
+            ${sizeElement}
+            ${colorElement}
+        </div>
+    ` : '';
+
     card.innerHTML = `
         <a href="${productUrl}" target="_blank" style="display: block;">
             <img src="${item.image}" style="width:100%; height:280px; object-fit:cover; cursor: pointer;">
         </a>
         <div class="brand" style="font-size:10px; color:#888;">${(item.brand || '').toLowerCase()}</div>
         <div class="name" style="font-weight:bold; margin: 5px 0;">${item.name}</div>
-        <div class="price">${item.price}</div>
-        <div class="cta-row" style="display: flex; gap: 8px; margin-top: 14px;">
+        <div class="price" style="margin-bottom: 8px;">${item.price}</div>
+        ${optionsHTML}
+        <div class="cta-row" style="display: flex; gap: 8px; margin-top: auto;">
             ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
-            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
         </div>
     `;
 
-    // Hover effects via JS (inline handlers violate Chrome Extension CSP)
+    // Hook up update function
+    const updateItem = async (fields) => {
+        try {
+            await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).update(fields);
+            
+            // Also update the checkout button attributes so if added to checkout it gets the new value
+            const checkoutBtn = card.querySelector('.add-checkout-btn');
+            if (checkoutBtn) {
+                if (fields.hasOwnProperty('size')) checkoutBtn.dataset.size = fields.size;
+                if (fields.hasOwnProperty('color')) checkoutBtn.dataset.color = fields.color;
+            }
+        } catch (e) {
+            console.error("Error updating item options:", e);
+        }
+    };
+
     if (!isSharedView) {
+        // Size listeners
+        const sizeSelect = card.querySelector('.dashboard-size-select');
+        const sizeInput = card.querySelector('.dashboard-size-input');
+
+        if (sizeSelect && sizeInput) {
+            sizeSelect.addEventListener('change', () => {
+                if (sizeSelect.value === 'custom_input') {
+                    sizeSelect.style.display = 'none';
+                    sizeInput.style.display = 'block';
+                    sizeInput.focus();
+                } else {
+                    updateItem({ size: sizeSelect.value });
+                }
+            });
+            sizeInput.addEventListener('change', () => {
+                updateItem({ size: sizeInput.value.trim() });
+            });
+            sizeInput.addEventListener('blur', () => {
+                if (sizeInput.value.trim() === '' && sizeSelect.options.length > 2) {
+                    // Switch back to select if cleared and select has options
+                    sizeInput.style.display = 'none';
+                    sizeSelect.style.display = 'block';
+                    sizeSelect.value = '';
+                }
+            });
+        } else if (sizeInput) {
+            sizeInput.addEventListener('change', () => {
+                updateItem({ size: sizeInput.value.trim() });
+            });
+        }
+
+        // Color listeners
+        const colorSelect = card.querySelector('.dashboard-color-select');
+        const colorInput = card.querySelector('.dashboard-color-input');
+
+        if (colorSelect && colorInput) {
+            colorSelect.addEventListener('change', () => {
+                if (colorSelect.value === 'custom_input') {
+                    colorSelect.style.display = 'none';
+                    colorInput.style.display = 'block';
+                    colorInput.focus();
+                } else {
+                    updateItem({ color: colorSelect.value });
+                }
+            });
+            colorInput.addEventListener('change', () => {
+                updateItem({ color: colorInput.value.trim() });
+            });
+            colorInput.addEventListener('blur', () => {
+                if (colorInput.value.trim() === '' && colorSelect.options.length > 2) {
+                    colorInput.style.display = 'none';
+                    colorSelect.style.display = 'block';
+                    colorSelect.value = '';
+                }
+            });
+        } else if (colorInput) {
+            colorInput.addEventListener('change', () => {
+                updateItem({ color: colorInput.value.trim() });
+            });
+        }
+
         const removeBtn = card.querySelector('.remove-btn');
         if (removeBtn) {
             removeBtn.addEventListener('mouseenter', () => { removeBtn.style.background = '#fafafa'; removeBtn.style.borderColor = '#ccc'; });
             removeBtn.addEventListener('mouseleave', () => { removeBtn.style.background = '#fff'; removeBtn.style.borderColor = '#ddd'; });
+            removeBtn.onclick = async () => {
+                await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
+                card.remove();
+            };
         }
     }
+
     const checkoutBtn = card.querySelector('.add-checkout-btn');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('mouseenter', () => { checkoutBtn.style.background = '#222'; });
         checkoutBtn.addEventListener('mouseleave', () => { checkoutBtn.style.background = '#000'; });
-    }
+        checkoutBtn.onclick = function () {
+            const id = this.dataset.id;
+            const existingIndex = checkoutCart.findIndex(item => item.id === id);
 
-    if (!isSharedView) {
-        card.querySelector('.remove-btn').onclick = async () => {
-            await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
-            card.remove();
+            if (existingIndex >= 0) {
+                checkoutCart.splice(existingIndex, 1);
+                this.textContent = 'Add to Checkout';
+                this.style.background = '#000';
+            } else {
+                checkoutCart.push({
+                    id: id,
+                    url: this.dataset.url,
+                    name: this.dataset.name,
+                    brand: this.dataset.brand,
+                    price: this.dataset.price,
+                    image: this.dataset.image,
+                    size: this.dataset.size,
+                    color: this.dataset.color
+                });
+                this.textContent = 'Added!';
+                this.style.background = '#27ae60';
+            }
+            updateCartDropdown();
         };
     }
-
-    card.querySelector('.add-checkout-btn').onclick = function () {
-        const id = this.dataset.id;
-        const existingIndex = checkoutCart.findIndex(item => item.id === id);
-
-        if (existingIndex >= 0) {
-            checkoutCart.splice(existingIndex, 1);
-            this.textContent = 'Add to Checkout';
-            this.style.background = '#000';
-        } else {
-            checkoutCart.push({
-                id: id,
-                url: this.dataset.url,
-                name: this.dataset.name,
-                brand: this.dataset.brand,
-                price: this.dataset.price,
-                image: this.dataset.image
-            });
-            this.textContent = 'Added!';
-            this.style.background = '#27ae60';
-        }
-        updateCartDropdown();
-    };
 
     return card;
 }

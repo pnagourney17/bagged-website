@@ -160,6 +160,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const bagSelect = document.getElementById('bag-selector');
     const addBagBtn = document.getElementById('add-bag-btn');
 
+    // Size & Colour selector elements
+    const productOptions = document.getElementById('product-options');
+    const sizeSelector = document.getElementById('size-selector');
+    const sizeInput = document.getElementById('size-input');
+    const colourSelector = document.getElementById('colour-selector');
+    const colourInput = document.getElementById('colour-input');
+
+    // Switch to manual input when "Custom..." is selected
+    sizeSelector.addEventListener('change', () => {
+        if (sizeSelector.value === 'custom_input') {
+            sizeSelector.style.display = 'none';
+            sizeInput.style.display = 'block';
+            sizeInput.focus();
+        }
+    });
+
+    colourSelector.addEventListener('change', () => {
+        if (colourSelector.value === 'custom_input') {
+            colourSelector.style.display = 'none';
+            colourInput.style.display = 'block';
+            colourInput.focus();
+        }
+    });
+
     function toProperCase(str) {
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
@@ -195,6 +219,36 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.getElementById('product-name').innerText = toProperCase(response.name);
                     document.getElementById('product-price').innerText = response.price;
                     window.currentProduct = response;
+
+                    // Populate sizes
+                    if (response.sizes && response.sizes.length > 0) {
+                        sizeSelector.innerHTML = '<option value="">Select Size</option>' + 
+                            response.sizes.map(s => `<option value="${s}">${s}</option>`).join('') +
+                            '<option value="custom_input">Custom...</option>';
+                        sizeSelector.style.display = 'block';
+                        sizeInput.style.display = 'none';
+                        sizeInput.value = '';
+                    } else {
+                        sizeSelector.style.display = 'none';
+                        sizeInput.style.display = 'block';
+                        sizeInput.value = '';
+                    }
+
+                    // Populate colours
+                    if (response.colors && response.colors.length > 0) {
+                        colourSelector.innerHTML = '<option value="">Select Colour</option>' + 
+                            response.colors.map(c => `<option value="${c}">${c}</option>`).join('') +
+                            '<option value="custom_input">Custom...</option>';
+                        colourSelector.style.display = 'block';
+                        colourInput.style.display = 'none';
+                        colourInput.value = '';
+                    } else {
+                        colourSelector.style.display = 'none';
+                        colourInput.style.display = 'block';
+                        colourInput.value = '';
+                    }
+
+                    productOptions.style.display = 'flex';
                 }
             });
         }, 300);
@@ -242,9 +296,29 @@ document.addEventListener('DOMContentLoaded', function () {
         const user = auth.currentUser;
         if (!user || !window.currentProduct) return;
         const selectedBag = bagSelect.value || "General";
+
+        // Get selected size & color values
+        let finalSize = '';
+        if (sizeSelector.style.display !== 'none' && sizeSelector.value !== 'custom_input') {
+            finalSize = sizeSelector.value;
+        } else {
+            finalSize = sizeInput.value.trim();
+        }
+
+        let finalColour = '';
+        if (colourSelector.style.display !== 'none' && colourSelector.value !== 'custom_input') {
+            finalColour = colourSelector.value;
+        } else {
+            finalColour = colourInput.value.trim();
+        }
+
         try {
             await db.collection('users').doc(user.uid).collection('wishlists').doc(selectedBag).collection('items').add({
                 ...window.currentProduct,
+                size: finalSize,
+                color: finalColour,
+                sizes: window.currentProduct.sizes || [],
+                colors: window.currentProduct.colors || [],
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             localStorage.setItem('lastUsedBag_' + user.uid, selectedBag);
