@@ -535,7 +535,9 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
 
     // Build size element
     const currentSize = item.size || item.activeSize || '';
-    const currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) ? item.sizes : [];
+    const currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) 
+        ? item.sizes 
+        : (currentSize ? [currentSize] : []);
 
     let sizeElement = '';
     if (isSharedView) {
@@ -547,9 +549,6 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                 const selected = (currentSize === s) ? 'selected' : '';
                 options.push(`<option value="${s}" ${selected}>${s}</option>`);
             });
-            if (currentSize && !currentSizes.includes(currentSize)) {
-                options.push(`<option value="${currentSize}" selected>${currentSize}</option>`);
-            }
             sizeElement = `
                 <div class="size-edit-container" style="flex: 1; position: relative;">
                     <select class="dashboard-size-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
@@ -557,14 +556,14 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
-        } else if (currentSize) {
-            sizeElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Size: ${currentSize}</span>`;
         }
     }
 
-    // Build color element
+    // Build color element (same look and function as size)
     const currentColor = item.color || item.activeColor || '';
-    const currentColors = (item.colors && Array.isArray(item.colors) && item.colors.length > 0) ? item.colors : [];
+    const currentColors = (item.colors && Array.isArray(item.colors) && item.colors.length > 0) 
+        ? item.colors 
+        : (currentColor ? [currentColor] : []);
 
     let colorElement = '';
     if (isSharedView) {
@@ -576,9 +575,6 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                 const selected = (currentColor === c) ? 'selected' : '';
                 options.push(`<option value="${c}" ${selected}>${c}</option>`);
             });
-            if (currentColor && !currentColors.includes(currentColor)) {
-                options.push(`<option value="${currentColor}" selected>${currentColor}</option>`);
-            }
             colorElement = `
                 <div class="color-edit-container" style="flex: 1; position: relative;">
                     <select class="dashboard-color-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
@@ -586,8 +582,6 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
-        } else if (currentColor) {
-            colorElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Col: ${currentColor}</span>`;
         }
     }
 
@@ -664,6 +658,8 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         const colorSelect = card.querySelector('.dashboard-color-select');
         if (colorSelect) {
             colorSelect.addEventListener('change', () => {
+                colorSelect.style.borderColor = '#ddd';
+                colorSelect.style.boxShadow = 'none';
                 updateItem({ color: colorSelect.value });
             });
         }
@@ -707,14 +703,36 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     sizeSelect.focus();
 
                     this.dataset.error = 'true';
-                    const originalText = 'Add to Checkout';
                     this.textContent = 'Select Size First!';
                     this.style.background = '#d32f2f';
 
                     setTimeout(() => {
                         this.dataset.error = 'false';
                         if (this.textContent === 'Select Size First!') {
-                            this.textContent = originalText;
+                            this.textContent = 'Add to Checkout';
+                            this.style.background = '#000';
+                        }
+                    }, 2200);
+                    return;
+                }
+
+                // Validate mandatory colour selection if colour dropdown exists
+                const colorSelect = card.querySelector('.dashboard-color-select');
+                const selectedColor = colorSelect ? colorSelect.value : (this.dataset.color || item.color || '');
+
+                if (colorSelect && !selectedColor) {
+                    colorSelect.style.borderColor = '#d32f2f';
+                    colorSelect.style.boxShadow = '0 0 0 2px rgba(211, 47, 47, 0.25)';
+                    colorSelect.focus();
+
+                    this.dataset.error = 'true';
+                    this.textContent = 'Select Colour First!';
+                    this.style.background = '#d32f2f';
+
+                    setTimeout(() => {
+                        this.dataset.error = 'false';
+                        if (this.textContent === 'Select Colour First!') {
+                            this.textContent = 'Add to Checkout';
                             this.style.background = '#000';
                         }
                     }, 2200);
@@ -729,7 +747,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     price: this.dataset.price,
                     image: this.dataset.image,
                     size: selectedSize,
-                    color: this.dataset.color || (card.querySelector('.dashboard-color-select') ? card.querySelector('.dashboard-color-select').value : '')
+                    color: selectedColor
                 });
                 this.textContent = 'Added!';
                 this.style.background = '#27ae60';
