@@ -515,54 +515,65 @@ function setupCartWidget() {
 }
 
 // ========== UNIFIED CHECKOUT MODAL LOGIC ==========
+let currentCheckoutStep = 1;
+
 const unifiedCheckoutModal = document.getElementById('unified-checkout-modal');
 const closeUnifiedCheckoutBtn = document.getElementById('close-unified-checkout');
-const submitPlaceUnifiedOrderBtn = document.getElementById('submit-place-unified-order');
+const checkoutNextStepBtn = document.getElementById('checkout-next-step-btn');
+const checkoutBackStepBtn = document.getElementById('checkout-back-step-btn');
 const unifiedCartSummaryList = document.getElementById('unified-cart-summary-list');
-const checkoutSubtotalEl = document.getElementById('checkout-subtotal');
-const checkoutTotalEl = document.getElementById('checkout-total');
 const checkoutErrorMsg = document.getElementById('checkout-error-msg');
+const sameBillingCheckbox = document.getElementById('same-billing-checkbox');
+const billingAddressSection = document.getElementById('billing-address-section');
 const successModal = document.getElementById('unified-order-success-modal');
 const closeSuccessModalBtn = document.getElementById('close-success-modal-btn');
 const successOrderIdEl = document.getElementById('success-order-id');
 
+// Card number auto-formatting (adds space every 4 digits)
+const cardNumberInput = document.getElementById('card-number');
+if (cardNumberInput) {
+    cardNumberInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        val = val.replace(/(.{4})/g, '$1 ').trim();
+        e.target.value = val;
+    });
+}
+
+// Expiry date auto-formatting (MM/YY)
+const cardExpiryInput = document.getElementById('card-expiry');
+if (cardExpiryInput) {
+    cardExpiryInput.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length >= 2) {
+            val = val.substring(0, 2) + '/' + val.substring(2, 4);
+        }
+        e.target.value = val;
+    });
+}
+
+// Same Billing Checkbox listener
+if (sameBillingCheckbox && billingAddressSection) {
+    sameBillingCheckbox.addEventListener('change', () => {
+        billingAddressSection.style.display = sameBillingCheckbox.checked ? 'none' : 'block';
+    });
+}
+
 function openUnifiedCheckoutModal() {
     if (!unifiedCheckoutModal || checkoutCart.length === 0) return;
 
-    let subtotalNumeric = 0;
-    unifiedCartSummaryList.innerHTML = checkoutCart.map((item) => {
-        const numericMatch = (item.price || '').match(/[\d,.]+/);
-        if (numericMatch) {
-            const val = parseFloat(numericMatch[0].replace(/,/g, ''));
-            if (!isNaN(val)) subtotalNumeric += val;
-        }
-
-        return `
-            <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fafafa;">
-                <img src="${item.image}" style="width: 54px; height: 54px; object-fit: cover; border-radius: 6px; background: #fff;">
-                <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 10px; color: #888; font-weight: 700; text-transform: lowercase; letter-spacing: 0.5px;">${item.brand || ''}</div>
-                    <div style="font-size: 13px; font-weight: 600; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111;">${item.name || ''}</div>
-                    <div style="font-size: 11px; color: #666; margin-top: 2px; display: flex; gap: 8px; font-weight: 500;">
-                        ${item.size ? `<span>Size: <strong>${item.size}</strong></span>` : ''}
-                        ${item.color ? `<span>Color: <strong>${item.color}</strong></span>` : ''}
-                    </div>
-                </div>
-                <div style="font-size: 13px; font-weight: 700; color: #000;">${item.price || ''}</div>
-            </div>
-        `;
-    }).join('');
-
-    const formattedSubtotal = subtotalNumeric > 0 ? `£${subtotalNumeric.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : (checkoutCart[0]?.price || '£0.00');
-    if (checkoutSubtotalEl) checkoutSubtotalEl.textContent = formattedSubtotal;
-    if (checkoutTotalEl) checkoutTotalEl.textContent = formattedSubtotal;
-    if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+    // Ensure quantity property exists on cart items
+    checkoutCart.forEach(item => {
+        if (!item.quantity || item.quantity < 1) item.quantity = 1;
+    });
 
     const user = auth.currentUser;
     if (user && user.email) {
         const emailInput = document.getElementById('checkout-email');
         if (emailInput && !emailInput.value) emailInput.value = user.email;
     }
+
+    goToCheckoutStep(1);
+    renderCheckoutCartItems();
 
     unifiedCheckoutModal.style.display = 'flex';
     setTimeout(() => { unifiedCheckoutModal.style.opacity = '1'; }, 10);
@@ -578,8 +589,242 @@ if (closeUnifiedCheckoutBtn) {
     closeUnifiedCheckoutBtn.onclick = closeUnifiedCheckoutModal;
 }
 
-if (submitPlaceUnifiedOrderBtn) {
-    submitPlaceUnifiedOrderBtn.onclick = async () => {
+function renderCheckoutCartItems() {
+    if (!unifiedCartSummaryList) return;
+
+    if (checkoutCart.length === 0) {
+        unifiedCartSummaryList.innerHTML = `<div style="text-align: center; color: #888; font-size: 13px; padding: 20px;">Your checkout cart is empty.</div>`;
+        updateCheckoutTotals(0);
+        return;
+    }
+
+    let subtotalNumeric = 0;
+
+    unifiedCartSummaryList.innerHTML = checkoutCart.map((item, index) => {
+        const numericMatch = (item.price || '').match(/[\d,.]+/);
+        let unitPrice = 0;
+        if (numericMatch) {
+            unitPrice = parseFloat(numericMatch[0].replace(/,/g, ''));
+        }
+        const itemQty = item.quantity || 1;
+        const lineTotal = unitPrice * itemQty;
+        subtotalNumeric += lineTotal;
+
+        const sizeOptionsHTML = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0)
+            ? `<select class="checkout-item-size-select" data-index="${index}" style="padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fff;">
+                <option value="">Size</option>
+                ${item.sizes.map(s => `<option value="${s}" ${s === item.size ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>`
+            : (item.size ? `<span style="font-size: 10px; color: #666; background: #fff; padding: 2px 6px; border: 1px solid #eee; border-radius: 3px;">Size: ${item.size}</span>` : '');
+
+        const colorOptionsHTML = (item.colors && Array.isArray(item.colors) && item.colors.length > 0)
+            ? `<select class="checkout-item-color-select" data-index="${index}" style="padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fff;">
+                <option value="">Colour</option>
+                ${item.colors.map(c => `<option value="${c}" ${c === item.color ? 'selected' : ''}>${c}</option>`).join('')}
+              </select>`
+            : (item.color ? `<span style="font-size: 10px; color: #666; background: #fff; padding: 2px 6px; border: 1px solid #eee; border-radius: 3px;">Col: ${item.color}</span>` : '');
+
+        return `
+            <div style="position: relative; display: flex; gap: 14px; align-items: center; padding: 14px; border: 1px solid #eee; border-radius: 10px; background: #fafafa;">
+                <button class="checkout-item-remove-btn" data-index="${index}" title="Remove item" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 16px; cursor: pointer; color: #aaa; padding: 0 4px; line-height: 1;">&times;</button>
+                <img src="${item.image}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: #fff;">
+                <div style="flex: 1; min-width: 0; padding-right: 14px;">
+                    <div style="font-size: 10px; color: #888; font-weight: 700; text-transform: lowercase; letter-spacing: 0.5px;">${item.brand || ''}</div>
+                    <div style="font-size: 12px; font-weight: 600; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111; margin-bottom: 6px;">${item.name || ''}</div>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px;">
+                        ${sizeOptionsHTML}
+                        ${colorOptionsHTML}
+                    </div>
+
+                    <!-- Quantity Control -->
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: #777; font-weight: 600;">QTY:</span>
+                        <div style="display: inline-flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; background: #fff; overflow: hidden;">
+                            <button class="qty-btn qty-minus" data-index="${index}" style="background: none; border: none; width: 22px; height: 22px; cursor: pointer; font-weight: bold; color: #555;">-</button>
+                            <span style="padding: 0 8px; font-size: 11px; font-weight: 700; color: #000;">${itemQty}</span>
+                            <button class="qty-btn qty-plus" data-index="${index}" style="background: none; border: none; width: 22px; height: 22px; cursor: pointer; font-weight: bold; color: #555;">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; color: #000; text-align: right;">
+                    ${unitPrice > 0 ? `£${lineTotal.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : item.price}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    updateCheckoutTotals(subtotalNumeric);
+    attachCheckoutCartEventListeners();
+}
+
+function updateCheckoutTotals(subtotalNumeric) {
+    const formattedSubtotal = subtotalNumeric > 0 ? `£${subtotalNumeric.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : (checkoutCart[0]?.price || '£0.00');
+    
+    ['checkout-subtotal-step1', 'checkout-total-step1', 'checkout-subtotal-step3', 'checkout-total-step3'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = formattedSubtotal;
+    });
+
+    const step1Tab = document.getElementById('step-tab-1');
+    if (step1Tab) step1Tab.textContent = `1. Items (${checkoutCart.length})`;
+}
+
+function attachCheckoutCartEventListeners() {
+    if (!unifiedCartSummaryList) return;
+
+    // Quantity Plus
+    unifiedCartSummaryList.querySelectorAll('.qty-plus').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            if (checkoutCart[idx]) {
+                checkoutCart[idx].quantity = (checkoutCart[idx].quantity || 1) + 1;
+                renderCheckoutCartItems();
+            }
+        };
+    });
+
+    // Quantity Minus
+    unifiedCartSummaryList.querySelectorAll('.qty-minus').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            if (checkoutCart[idx] && checkoutCart[idx].quantity > 1) {
+                checkoutCart[idx].quantity -= 1;
+                renderCheckoutCartItems();
+            }
+        };
+    });
+
+    // Remove Item
+    unifiedCartSummaryList.querySelectorAll('.checkout-item-remove-btn').forEach(btn => {
+        btn.onclick = () => {
+            const idx = parseInt(btn.dataset.index);
+            if (idx >= 0 && idx < checkoutCart.length) {
+                checkoutCart.splice(idx, 1);
+                renderCheckoutCartItems();
+                updateCartDropdown();
+            }
+        };
+    });
+
+    // Size Selection Change
+    unifiedCartSummaryList.querySelectorAll('.checkout-item-size-select').forEach(sel => {
+        sel.onchange = () => {
+            const idx = parseInt(sel.dataset.index);
+            if (checkoutCart[idx]) {
+                checkoutCart[idx].size = sel.value;
+            }
+        };
+    });
+
+    // Color Selection Change
+    unifiedCartSummaryList.querySelectorAll('.checkout-item-color-select').forEach(sel => {
+        sel.onchange = () => {
+            const idx = parseInt(sel.dataset.index);
+            if (checkoutCart[idx]) {
+                checkoutCart[idx].color = sel.value;
+            }
+        };
+    });
+}
+
+function goToCheckoutStep(step) {
+    currentCheckoutStep = step;
+    if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+
+    const step1Content = document.getElementById('checkout-step-1-content');
+    const step2Content = document.getElementById('checkout-step-2-content');
+    const step3Content = document.getElementById('checkout-step-3-content');
+    const tab1 = document.getElementById('step-tab-1');
+    const tab2 = document.getElementById('step-tab-2');
+    const tab3 = document.getElementById('step-tab-3');
+
+    if (step1Content) step1Content.style.display = step === 1 ? 'block' : 'none';
+    if (step2Content) step2Content.style.display = step === 2 ? 'block' : 'none';
+    if (step3Content) step3Content.style.display = step === 3 ? 'block' : 'none';
+
+    [tab1, tab2, tab3].forEach((tab, index) => {
+        if (!tab) return;
+        const tabStep = index + 1;
+        if (tabStep === step) {
+            tab.style.color = '#000';
+            tab.style.borderBottom = '2px solid #000';
+            tab.style.marginBottom = '-2px';
+        } else if (tabStep < step) {
+            tab.style.color = '#27ae60';
+            tab.style.borderBottom = 'none';
+        } else {
+            tab.style.color = '#aaa';
+            tab.style.borderBottom = 'none';
+        }
+    });
+
+    if (checkoutBackStepBtn) checkoutBackStepBtn.style.display = step > 1 ? 'block' : 'none';
+
+    if (checkoutNextStepBtn) {
+        if (step === 1) {
+            checkoutNextStepBtn.textContent = 'PROCEED TO SHIPPING →';
+            checkoutNextStepBtn.style.background = '#000';
+        } else if (step === 2) {
+            checkoutNextStepBtn.textContent = 'PROCEED TO PAYMENT →';
+            checkoutNextStepBtn.style.background = '#000';
+        } else if (step === 3) {
+            const totalText = document.getElementById('checkout-total-step3')?.textContent || '';
+            checkoutNextStepBtn.textContent = `PAY & PLACE UNIFIED ORDER (${totalText})`;
+            checkoutNextStepBtn.style.background = '#000';
+        }
+    }
+}
+
+// Stepper Tab Click Listeners
+['step-tab-1', 'step-tab-2', 'step-tab-3'].forEach((id, idx) => {
+    const tab = document.getElementById(id);
+    if (tab) {
+        tab.onclick = () => {
+            const targetStep = idx + 1;
+            if (targetStep < currentCheckoutStep) {
+                goToCheckoutStep(targetStep);
+            } else if (targetStep > currentCheckoutStep) {
+                if (validateStep(currentCheckoutStep)) {
+                    goToCheckoutStep(targetStep);
+                }
+            }
+        };
+    }
+});
+
+if (checkoutBackStepBtn) {
+    checkoutBackStepBtn.onclick = () => {
+        if (currentCheckoutStep > 1) {
+            goToCheckoutStep(currentCheckoutStep - 1);
+        }
+    };
+}
+
+if (checkoutNextStepBtn) {
+    checkoutNextStepBtn.onclick = () => {
+        if (!validateStep(currentCheckoutStep)) return;
+
+        if (currentCheckoutStep < 3) {
+            goToCheckoutStep(currentCheckoutStep + 1);
+        } else if (currentCheckoutStep === 3) {
+            processFinalUnifiedOrder();
+        }
+    };
+}
+
+function validateStep(step) {
+    if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+
+    if (step === 1) {
+        if (checkoutCart.length === 0) {
+            if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Your cart is empty. Please add items before checking out.';
+            return false;
+        }
+        return true;
+    }
+
+    if (step === 2) {
         const firstName = (document.getElementById('checkout-first-name')?.value || '').trim();
         const lastName = (document.getElementById('checkout-last-name')?.value || '').trim();
         const address = (document.getElementById('checkout-address')?.value || '').trim();
@@ -589,62 +834,103 @@ if (submitPlaceUnifiedOrderBtn) {
 
         if (!firstName || !lastName || !address || !city || !postcode || !email) {
             if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Please fill out all required shipping fields.';
-            return;
+            return false;
         }
 
-        submitPlaceUnifiedOrderBtn.disabled = true;
-        submitPlaceUnifiedOrderBtn.textContent = 'PLACING ORDER...';
-        if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+        if (sameBillingCheckbox && !sameBillingCheckbox.checked) {
+            const bFirst = (document.getElementById('billing-first-name')?.value || '').trim();
+            const bLast = (document.getElementById('billing-last-name')?.value || '').trim();
+            const bAddr = (document.getElementById('billing-address')?.value || '').trim();
+            const bCity = (document.getElementById('billing-city')?.value || '').trim();
+            const bPost = (document.getElementById('billing-postcode')?.value || '').trim();
 
-        try {
-            const user = auth.currentUser;
-            const orderRefId = 'BG-' + Math.floor(100000 + Math.random() * 900000);
-            const orderData = {
-                orderId: orderRefId,
-                items: checkoutCart,
-                shippingAddress: {
-                    firstName,
-                    lastName,
-                    address,
-                    city,
-                    postcode,
-                    email
-                },
-                status: 'pending_fulfillment',
-                totalAmount: checkoutTotalEl ? checkoutTotalEl.textContent : '£0.00',
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-            if (user) {
-                await db.collection('users').doc(user.uid).collection('orders').doc(orderRefId).set(orderData);
+            if (!bFirst || !bLast || !bAddr || !bCity || !bPost) {
+                if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Please fill out all required billing address fields.';
+                return false;
             }
-
-            closeUnifiedCheckoutModal();
-
-            checkoutCart = [];
-            updateCartDropdown();
-
-            if (successOrderIdEl) successOrderIdEl.textContent = '#' + orderRefId;
-            if (successModal) {
-                successModal.style.display = 'flex';
-                setTimeout(() => { successModal.style.opacity = '1'; }, 10);
-            }
-        } catch (e) {
-            console.error("Error creating order:", e);
-            if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Failed to place order. Please try again.';
-        } finally {
-            submitPlaceUnifiedOrderBtn.disabled = false;
-            submitPlaceUnifiedOrderBtn.textContent = 'PLACE UNIFIED ORDER';
         }
-    };
+        return true;
+    }
+
+    if (step === 3) {
+        const cardName = (document.getElementById('card-name')?.value || '').trim();
+        const cardNumber = (document.getElementById('card-number')?.value || '').replace(/\s/g, '');
+        const cardExpiry = (document.getElementById('card-expiry')?.value || '').trim();
+        const cardCvc = (document.getElementById('card-cvc')?.value || '').trim();
+
+        if (!cardName || cardNumber.length < 15 || !cardExpiry.includes('/') || cardCvc.length < 3) {
+            if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Please enter valid credit card payment details.';
+            return false;
+        }
+        return true;
+    }
+
+    return true;
 }
 
-if (closeSuccessModalBtn) {
-    closeSuccessModalBtn.onclick = () => {
-        if (!successModal) return;
-        successModal.style.opacity = '0';
-        setTimeout(() => { successModal.style.display = 'none'; }, 300);
-    };
+async function processFinalUnifiedOrder() {
+    if (!checkoutNextStepBtn) return;
+    checkoutNextStepBtn.disabled = true;
+    checkoutNextStepBtn.textContent = 'PROCESSING PAYMENT...';
+
+    try {
+        const firstName = document.getElementById('checkout-first-name').value.trim();
+        const lastName = document.getElementById('checkout-last-name').value.trim();
+        const address = document.getElementById('checkout-address').value.trim();
+        const city = document.getElementById('checkout-city').value.trim();
+        const postcode = document.getElementById('checkout-postcode').value.trim();
+        const email = document.getElementById('checkout-email').value.trim();
+
+        const isSameBilling = sameBillingCheckbox ? sameBillingCheckbox.checked : true;
+        let billingDetails = {};
+        if (isSameBilling) {
+            billingDetails = { firstName, lastName, address, city, postcode };
+        } else {
+            billingDetails = {
+                firstName: document.getElementById('billing-first-name').value.trim(),
+                lastName: document.getElementById('billing-last-name').value.trim(),
+                address: document.getElementById('billing-address').value.trim(),
+                city: document.getElementById('billing-city').value.trim(),
+                postcode: document.getElementById('billing-postcode').value.trim()
+            };
+        }
+
+        const user = auth.currentUser;
+        const orderRefId = 'BG-' + Math.floor(100000 + Math.random() * 900000);
+        const totalText = document.getElementById('checkout-total-step3')?.textContent || '£0.00';
+
+        const orderData = {
+            orderId: orderRefId,
+            items: checkoutCart,
+            shippingAddress: { firstName, lastName, address, city, postcode, email },
+            billingAddress: billingDetails,
+            paymentStatus: 'paid',
+            status: 'pending_fulfillment',
+            totalAmount: totalText,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (user) {
+            await db.collection('users').doc(user.uid).collection('orders').doc(orderRefId).set(orderData);
+        }
+
+        closeUnifiedCheckoutModal();
+
+        checkoutCart = [];
+        updateCartDropdown();
+
+        if (successOrderIdEl) successOrderIdEl.textContent = '#' + orderRefId;
+        if (successModal) {
+            successModal.style.display = 'flex';
+            setTimeout(() => { successModal.style.opacity = '1'; }, 10);
+        }
+    } catch (e) {
+        console.error("Error creating order:", e);
+        if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Payment failed. Please try again.';
+    } finally {
+        checkoutNextStepBtn.disabled = false;
+        goToCheckoutStep(3);
+    }
 }
 
 function createCard(item, wishlistId, itemId, isSharedView = false, user) {
