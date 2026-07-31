@@ -49,14 +49,23 @@ if (!window.baggedScraperLoaded) {
 
     function getSizes() {
         let sizes = [];
-        // 1. Check select elements
-        const selects = Array.from(document.querySelectorAll('select'));
+
+        // 1. Check all select elements and custom dropdowns
+        const selects = Array.from(document.querySelectorAll('select, [data-qa*="size" i], [class*="size-selector" i], [class*="SizeSelector" i], [class*="select-size" i], [class*="SizeDropdown" i]'));
         for (let select of selects) {
-            const attrStr = (select.id + ' ' + select.className + ' ' + select.name + ' ' + (select.getAttribute('aria-label') || '')).toLowerCase();
-            if (attrStr.includes('size') || attrStr.includes('dimension')) {
-                const options = Array.from(select.options)
-                    .map(opt => opt.innerText.trim())
-                    .filter(txt => txt && !/select|choose/i.test(txt));
+            const attrStr = (select.id + ' ' + select.className + ' ' + select.name + ' ' + (select.getAttribute('aria-label') || '') + ' ' + (select.getAttribute('data-qa') || '')).toLowerCase();
+            if (attrStr.includes('size') || attrStr.includes('dimension') || select.tagName === 'SELECT') {
+                let options = [];
+                if (select.tagName === 'SELECT') {
+                    options = Array.from(select.options)
+                        .map(opt => opt.innerText.trim())
+                        .filter(txt => txt && !/^(?:select|choose|select a size)$/i.test(txt));
+                } else {
+                    const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
+                    options = Array.from(optEls)
+                        .map(opt => opt.innerText.trim())
+                        .filter(txt => txt && !/^(?:select|choose|select a size)$/i.test(txt));
+                }
                 if (options.length > 0) {
                     sizes = options;
                     break;
@@ -87,22 +96,28 @@ if (!window.baggedScraperLoaded) {
             }
         }
         
-        // 3. Check for elements inside size containers
+        // 3. Check for elements inside size containers (buttons, swatches, pills)
         if (sizes.length === 0) {
-            const sizeContainers = document.querySelectorAll('[class*="size" i], [id*="size" i], [class*="dimension" i]');
+            const sizeContainers = document.querySelectorAll('[class*="size" i], [id*="size" i], [class*="dimension" i], [data-qa*="size" i]');
             for (let container of sizeContainers) {
-                const items = Array.from(container.querySelectorAll('button, li, [role="radio"], .swatch, [class*="item"], [class*="value"]'));
+                const items = Array.from(container.querySelectorAll('button, li, [role="radio"], .swatch, [class*="item"], [class*="value"], [class*="option"]'));
                 const textOptions = items
                     .map(item => item.innerText.trim())
-                    .filter(txt => txt && txt.length > 0 && txt.length < 15 && !/select|size/i.test(txt));
-                if (textOptions.length > 0 && textOptions.length < 30) {
+                    .filter(txt => txt && txt.length > 0 && txt.length < 30 && !/^(?:select|size|choose a size)$/i.test(txt));
+                if (textOptions.length > 0 && textOptions.length < 40) {
                     sizes = [...new Set(textOptions)];
                     break;
                 }
             }
         }
+
+        // 4. Fallback to activeSize if sizes array is empty
+        if (sizes.length === 0) {
+            const active = getActiveSize();
+            if (active) sizes = [active];
+        }
         
-        return [...new Set(sizes)].slice(0, 15);
+        return [...new Set(sizes)].slice(0, 20);
     }
 
     function getColours() {

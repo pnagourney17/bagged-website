@@ -534,18 +534,21 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     const isSoldOut = Boolean(item.soldOut || item.isSoldOut || item.status === 'sold_out' || item.outOfStock || item.inStock === false);
 
     // Build size element
+    const currentSize = item.size || item.activeSize || '';
+    const currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) ? item.sizes : [];
+
     let sizeElement = '';
     if (isSharedView) {
-        sizeElement = item.size ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Size: ${item.size}</span>` : '';
+        sizeElement = currentSize ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Size: ${currentSize}</span>` : '';
     } else {
-        if (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) {
+        if (currentSizes.length > 0) {
             let options = ['<option value="">Size</option>'];
-            item.sizes.forEach(s => {
-                const selected = item.size === s ? 'selected' : '';
+            currentSizes.forEach(s => {
+                const selected = (currentSize === s) ? 'selected' : '';
                 options.push(`<option value="${s}" ${selected}>${s}</option>`);
             });
-            if (item.size && !item.sizes.includes(item.size)) {
-                options.push(`<option value="${item.size}" selected>${item.size}</option>`);
+            if (currentSize && !currentSizes.includes(currentSize)) {
+                options.push(`<option value="${currentSize}" selected>${currentSize}</option>`);
             }
             sizeElement = `
                 <div class="size-edit-container" style="flex: 1; position: relative;">
@@ -554,24 +557,27 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
-        } else if (item.size) {
-            sizeElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Size: ${item.size}</span>`;
+        } else if (currentSize) {
+            sizeElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Size: ${currentSize}</span>`;
         }
     }
 
     // Build color element
+    const currentColor = item.color || item.activeColor || '';
+    const currentColors = (item.colors && Array.isArray(item.colors) && item.colors.length > 0) ? item.colors : [];
+
     let colorElement = '';
     if (isSharedView) {
-        colorElement = item.color ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Col: ${item.color}</span>` : '';
+        colorElement = currentColor ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Col: ${currentColor}</span>` : '';
     } else {
-        if (item.colors && Array.isArray(item.colors) && item.colors.length > 0) {
+        if (currentColors.length > 0) {
             let options = ['<option value="">Colour</option>'];
-            item.colors.forEach(c => {
-                const selected = item.color === c ? 'selected' : '';
+            currentColors.forEach(c => {
+                const selected = (currentColor === c) ? 'selected' : '';
                 options.push(`<option value="${c}" ${selected}>${c}</option>`);
             });
-            if (item.color && !item.colors.includes(item.color)) {
-                options.push(`<option value="${item.color}" selected>${item.color}</option>`);
+            if (currentColor && !currentColors.includes(currentColor)) {
+                options.push(`<option value="${currentColor}" selected>${currentColor}</option>`);
             }
             colorElement = `
                 <div class="color-edit-container" style="flex: 1; position: relative;">
@@ -580,8 +586,8 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                     </select>
                 </div>
             `;
-        } else if (item.color) {
-            colorElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Col: ${item.color}</span>`;
+        } else if (currentColor) {
+            colorElement = `<span style="background: #fafafa; border: 1px solid #eee; padding: 4px 8px; border-radius: 4px; font-size: 10px; color: #666; font-weight: 500;">Col: ${currentColor}</span>`;
         }
     }
 
