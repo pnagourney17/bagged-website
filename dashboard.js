@@ -531,6 +531,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     card.className = 'product-card';
     card.style.textTransform = "capitalize";
     const productUrl = item.url || '#';
+    const isSoldOut = Boolean(item.soldOut || item.isSoldOut || item.status === 'sold_out' || item.outOfStock || item.inStock === false);
 
     // Build size element
     let sizeElement = '';
@@ -592,16 +593,44 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     ` : '';
 
     card.innerHTML = `
-        <a href="${productUrl}" target="_blank" style="display: block;">
-            <img src="${item.image}" style="width:100%; height:280px; object-fit:cover; cursor: pointer;">
-        </a>
+        <div class="image-container" style="position: relative; width: 100%; height: 280px; margin-bottom: 15px; overflow: hidden; border-radius: 12px; background: #f9f9f9;">
+            <a href="${productUrl}" target="_blank" style="display: block; width: 100%; height: 100%;">
+                <img src="${item.image}" style="width:100%; height:100%; object-fit:cover; cursor: pointer; transition: filter 0.3s; ${isSoldOut ? 'filter: grayscale(40%); opacity: 0.85;' : ''}">
+            </a>
+            ${isSoldOut ? `
+                <div class="sold-out-badge" style="position: absolute; top: 12px; left: 12px; background: rgba(0, 0, 0, 0.85); color: #ffffff; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 10px; border-radius: 4px; z-index: 2; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+                    SOLD OUT
+                </div>
+            ` : ''}
+        </div>
         <div class="brand" style="font-size:10px; color:#888;">${(item.brand || '').toLowerCase()}</div>
         <div class="name" style="font-weight:bold; margin: 5px 0;">${item.name}</div>
-        <div class="price" style="margin-bottom: 8px;">${item.price}</div>
+        
+        <div class="price-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <div class="price" style="${isSoldOut ? 'text-decoration: line-through; opacity: 0.55; margin-bottom: 0;' : ''}">${item.price}</div>
+            ${isSoldOut ? `
+                <span class="sold-out-tag" style="font-size: 9px; font-weight: 700; color: #d32f2f; background: #ffebee; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; text-transform: uppercase;">
+                    Sold Out
+                </span>
+            ` : ''}
+        </div>
+
         ${optionsHTML}
-        <div class="cta-row" style="display: flex; gap: 8px; margin-top: auto;">
-            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
-            <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+
+        <div class="cta-row" style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+            <div style="display: flex; gap: 8px;">
+                ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
+                ${isSoldOut ? `
+                    <button class="add-checkout-btn disabled" disabled style="background: #e5e5e5; color: #888; border: 1px solid #e5e5e5; border-radius: 4px; height: 38px; cursor: not-allowed; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">Sold Out</button>
+                ` : `
+                    <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+                `}
+            </div>
+            ${!isSharedView ? `
+                <button class="toggle-sold-out-btn" data-id="${itemId}" style="background: none; border: 1px dashed #ccc; color: #666; border-radius: 4px; height: 26px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; transition: all 0.2s; margin-top: 2px;">
+                    ${isSoldOut ? 'Mark as In Stock' : 'Mark as Sold Out'}
+                </button>
+            ` : ''}
         </div>
     `;
 
@@ -647,15 +676,38 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                 card.remove();
             };
         }
+
+        const toggleSoldOutBtn = card.querySelector('.toggle-sold-out-btn');
+        if (toggleSoldOutBtn) {
+            toggleSoldOutBtn.addEventListener('mouseenter', () => { toggleSoldOutBtn.style.borderColor = '#999'; toggleSoldOutBtn.style.color = '#000'; });
+            toggleSoldOutBtn.addEventListener('mouseleave', () => { toggleSoldOutBtn.style.borderColor = '#ccc'; toggleSoldOutBtn.style.color = '#666'; });
+            toggleSoldOutBtn.onclick = async () => {
+                const newSoldOutState = !isSoldOut;
+                item.soldOut = newSoldOutState;
+                toggleSoldOutBtn.disabled = true;
+                toggleSoldOutBtn.textContent = 'Updating...';
+                try {
+                    await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).update({
+                        soldOut: newSoldOutState
+                    });
+                    const newCard = createCard(item, wishlistId, itemId, isSharedView, user);
+                    card.replaceWith(newCard);
+                } catch (e) {
+                    console.error('Failed to update sold out status:', e);
+                    toggleSoldOutBtn.disabled = false;
+                    toggleSoldOutBtn.textContent = isSoldOut ? 'Mark as In Stock' : 'Mark as Sold Out';
+                }
+            };
+        }
     }
 
-    const checkoutBtn = card.querySelector('.add-checkout-btn');
+    const checkoutBtn = card.querySelector('.add-checkout-btn:not(.disabled)');
     if (checkoutBtn) {
         checkoutBtn.addEventListener('mouseenter', () => { checkoutBtn.style.background = '#222'; });
         checkoutBtn.addEventListener('mouseleave', () => { checkoutBtn.style.background = '#000'; });
         checkoutBtn.onclick = function () {
             const id = this.dataset.id;
-            const existingIndex = checkoutCart.findIndex(item => item.id === id);
+            const existingIndex = checkoutCart.findIndex(cartItem => cartItem.id === id);
 
             if (existingIndex >= 0) {
                 checkoutCart.splice(existingIndex, 1);
