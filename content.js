@@ -48,41 +48,57 @@ if (!window.baggedScraperLoaded) {
     });
 
     function isJunkSize(txt) {
-        if (!txt || txt.length === 0 || txt.length > 35) return true;
+        if (!txt || txt.length === 0 || txt.length > 45) return true;
         const lower = txt.toLowerCase().trim();
-        if (/^(?:select|size|choose|select a size|add|add to bag|add to basket|add to cart)$/i.test(lower)) return true;
+        if (/^(?:select|size|choose|select a size|add|add to bag|add to basket|add to cart|put it in your basket|put it in your bag)$/i.test(lower)) return true;
         const junkKeywords = [
             'product measurements', 'measurements', 'size guide', 'find your size',
             'what is my size', 'check in-store', 'view size chart', 'size info',
             'how to measure', 'fit guide', 'size assistance', 'add to bag', 'add to cart',
-            'add to basket', 'add', 'process order', 'buy now', 'checkout'
+            'add to basket', 'add', 'process order', 'buy now', 'checkout',
+            'put it in your basket', 'put it in your bag', 'size recommender',
+            'smaller fit', 'larger fit', 'view similar', 'coming soon'
         ];
-        return junkKeywords.some(keyword => lower === keyword || lower.startsWith(keyword));
+        return junkKeywords.some(keyword => lower === keyword || lower.startsWith(keyword) || lower.includes(keyword));
+    }
+
+    function extractClothingSizeCode(rawText) {
+        if (!rawText) return null;
+        const clean = rawText.trim();
+        const match = clean.match(/^(XXS|XS|S|M|L|XL|XXL|XXXL|[0-9]{1,2}(?:\.[0-9])?|UK\s*[0-9]{1,2}|EU\s*[0-9]{1,2}|US\s*[0-9]{1,2}|IT\s*[0-9]{1,2})(?:\s+|$)/i);
+        if (match) {
+            let code = match[1].toUpperCase();
+            if (/few items left/i.test(clean)) return `${code} (Few left)`;
+            if (/coming soon/i.test(clean)) return `${code} (Coming soon)`;
+            if (/view similar|out of stock|sold out/i.test(clean)) return `${code} (Sold out)`;
+            return code;
+        }
+        return null;
     }
 
     function getSizes() {
         let sizes = [];
 
-        // 0. Zara Specific Targeted Selectors for size labels
+        // 0. Zara & Fast Fashion Targeted Selectors
         const zaraSizeEls = document.querySelectorAll(`
-            .product-detail-size-selector__size-list-item-name,
-            [data-qa-action="size-selector-sizes-size-link"] span,
-            [data-qa-action="size-selector-sizes-size"] span,
-            .size-selector-sizes__size-label,
             .product-detail-size-selector__size-list-item,
+            .product-detail-size-selector__size-list-item-name,
+            [data-qa-action="size-selector-sizes-size"],
             [data-qa-action="size-selector-sizes-size-link"],
-            [class*="size-selector-sizes"] li,
-            [class*="product-size-selector"] li
+            .size-selector-sizes__size,
+            [class*="size-selector"] li,
+            [class*="product-size-selector"] li,
+            [class*="size-selector-sizes"] button,
+            [class*="product-detail-size"] li
         `);
 
         if (zaraSizeEls.length > 0) {
             zaraSizeEls.forEach(el => {
                 let txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-                if (el.children.length > 0) {
-                    const labelEl = el.querySelector('[class*="name"], [class*="label"], span');
-                    if (labelEl) txt = (labelEl.innerText || labelEl.textContent || '').replace(/\s+/g, ' ').trim();
-                }
-                if (!isJunkSize(txt)) {
+                const parsedCode = extractClothingSizeCode(txt);
+                if (parsedCode) {
+                    sizes.push(parsedCode);
+                } else if (!isJunkSize(txt)) {
                     sizes.push(txt);
                 }
             });
@@ -103,6 +119,7 @@ if (!window.baggedScraperLoaded) {
                     const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
                     options = Array.from(optEls)
                         .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
+                        .map(txt => extractClothingSizeCode(txt) || txt)
                         .filter(txt => !isJunkSize(txt));
                 }
                 if (options.length > 0) {
@@ -130,7 +147,7 @@ if (!window.baggedScraperLoaded) {
                         const parent = r.closest('label');
                         if (parent) labelText = parent.innerText.trim();
                     }
-                    if (labelText && !isJunkSize(labelText)) sizes.push(labelText);
+                    if (labelText && !isJunkSize(labelText)) sizes.push(extractClothingSizeCode(labelText) || labelText);
                 });
             }
         }
@@ -142,6 +159,7 @@ if (!window.baggedScraperLoaded) {
                 const items = Array.from(container.querySelectorAll('button, li, [role="radio"], .swatch, [class*="item"], [class*="value"], [class*="option"], span'));
                 const textOptions = items
                     .map(item => (item.innerText || item.textContent || '').replace(/\s+/g, ' ').trim())
+                    .map(txt => extractClothingSizeCode(txt) || txt)
                     .filter(txt => !isJunkSize(txt));
                 if (textOptions.length > 0 && textOptions.length < 40) {
                     sizes = [...new Set(textOptions)];
@@ -150,7 +168,7 @@ if (!window.baggedScraperLoaded) {
             }
         }
 
-        // 4. Scan page scripts for Zara product variants JSON
+        // 4. Scan page text & scripts for Zara product variants
         if (sizes.length === 0) {
             const scripts = document.querySelectorAll('script');
             for (let script of scripts) {
