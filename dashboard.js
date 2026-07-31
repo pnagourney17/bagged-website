@@ -1002,30 +1002,37 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     const productUrl = item.url || '#';
     const isSoldOut = Boolean(item.soldOut || item.isSoldOut || item.status === 'sold_out' || item.outOfStock || item.inStock === false);
 
-    // Build size element
+    // Build size element (Guaranteed to always render for every PDP)
+    const isFootwear = /boot|shoe|sandal|sneaker|heel|mule|flat|loafers|pumps|footwear|slides|clogs/i.test((item.name || '') + ' ' + (item.url || ''));
+    const defaultFallbackSizes = isFootwear 
+        ? ['UK 3', 'UK 4', 'UK 5', 'UK 6', 'UK 7', 'UK 8']
+        : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
     const currentSize = item.size || item.activeSize || '';
-    const currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) 
+    let currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) 
         ? item.sizes 
-        : (currentSize ? [currentSize] : []);
+        : (currentSize ? [...new Set([currentSize, ...defaultFallbackSizes])] : defaultFallbackSizes);
+
+    if (!currentSizes || currentSizes.length === 0) {
+        currentSizes = defaultFallbackSizes;
+    }
 
     let sizeElement = '';
     if (isSharedView) {
         sizeElement = currentSize ? `<span style="background: #fafafa; border: 1px solid #eee; padding: 3px 6px; border-radius: 4px; font-size: 10px; color: #666;">Size: ${currentSize}</span>` : '';
     } else {
-        if (currentSizes.length > 0) {
-            let options = ['<option value="">Size</option>'];
-            currentSizes.forEach(s => {
-                const selected = (currentSize === s) ? 'selected' : '';
-                options.push(`<option value="${s}" ${selected}>${s}</option>`);
-            });
-            sizeElement = `
-                <div class="size-edit-container" style="flex: 1; position: relative;">
-                    <select class="dashboard-size-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
-                        ${options.join('')}
-                    </select>
-                </div>
-            `;
-        }
+        let options = ['<option value="">Size</option>'];
+        currentSizes.forEach(s => {
+            const selected = (currentSize === s) ? 'selected' : '';
+            options.push(`<option value="${s}" ${selected}>${s}</option>`);
+        });
+        sizeElement = `
+            <div class="size-edit-container" style="flex: 1; position: relative;">
+                <select class="dashboard-size-select" style="width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff; box-sizing: border-box;">
+                    ${options.join('')}
+                </select>
+            </div>
+        `;
     }
 
     // Build color element (same look and function as size)

@@ -185,10 +185,17 @@ if (!window.baggedScraperLoaded) {
             }
         }
 
-        // 5. Fallback to activeSize if sizes array is empty
+        // 5. Fallback to activeSize or Category Defaults if sizes array is empty
         if (sizes.length === 0) {
             const active = getActiveSize();
-            if (active && !isJunkSize(active)) sizes = [active];
+            if (active && !isJunkSize(active)) {
+                sizes = [active];
+            } else {
+                const isShoes = /boot|shoe|sandal|sneaker|heel|mule|flat|loafers|pumps|footwear|slides|clogs/i.test(document.title + ' ' + window.location.href);
+                sizes = isShoes 
+                    ? ['UK 3', 'UK 4', 'UK 5', 'UK 6', 'UK 7', 'UK 8']
+                    : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+            }
         }
         
         return [...new Set(sizes)].filter(s => !isJunkSize(s)).slice(0, 20);
