@@ -47,28 +47,41 @@ if (!window.baggedScraperLoaded) {
         return true;
     });
 
+    function isJunkSize(txt) {
+        if (!txt || txt.length === 0 || txt.length > 35) return true;
+        const lower = txt.toLowerCase().trim();
+        if (/^(?:select|size|choose|select a size)$/i.test(lower)) return true;
+        const junkKeywords = [
+            'product measurements', 'measurements', 'size guide', 'find your size',
+            'what is my size', 'check in-store', 'view size chart', 'size info',
+            'how to measure', 'fit guide', 'size assistance', 'add to bag', 'add to cart'
+        ];
+        return junkKeywords.some(keyword => lower.includes(keyword));
+    }
+
     function getSizes() {
         let sizes = [];
 
-        // 0. Zara & Fast-Fashion Specific Selector Check
+        // 0. Zara Specific Targeted Selectors
         const zaraSizeEls = document.querySelectorAll(`
-            [class*="product-detail-size" i] li,
-            [class*="size-selector" i] li,
-            [data-qa-action*="size" i],
-            [data-qa-qualifier*="size" i],
             .product-detail-size-selector__size-list-item,
-            button[class*="size-selector" i],
-            [class*="size-item" i]
+            [data-qa-action="size-selector-sizes-size"],
+            [data-qa-action="size-selector-sizes-size-link"],
+            .size-selector-sizes__size,
+            [class*="size-selector-sizes"] li,
+            [class*="size-selector-sizes"] button,
+            [class*="size-selector"] li span,
+            [class*="product-size-selector"] li
         `);
 
         if (zaraSizeEls.length > 0) {
             zaraSizeEls.forEach(el => {
                 let txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-                if (txt && txt.length < 30 && !/^(?:size guide|find your size|check in-store|what is my size|view size chart|size)$/i.test(txt)) {
+                if (!isJunkSize(txt)) {
                     sizes.push(txt);
                 }
             });
-            if (sizes.length > 0) return [...new Set(sizes)].slice(0, 20);
+            if (sizes.length > 0) return [...new Set(sizes)].filter(s => !isJunkSize(s)).slice(0, 20);
         }
 
         // 1. Check all select elements and custom dropdowns
@@ -80,12 +93,12 @@ if (!window.baggedScraperLoaded) {
                 if (select.tagName === 'SELECT') {
                     options = Array.from(select.options)
                         .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
-                        .filter(txt => txt && !/^(?:select|choose|select a size|size)$/i.test(txt));
+                        .filter(txt => !isJunkSize(txt));
                 } else {
                     const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
                     options = Array.from(optEls)
                         .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
-                        .filter(txt => txt && !/^(?:select|choose|select a size|size|size guide)$/i.test(txt));
+                        .filter(txt => !isJunkSize(txt));
                 }
                 if (options.length > 0) {
                     sizes = options;
@@ -112,7 +125,7 @@ if (!window.baggedScraperLoaded) {
                         const parent = r.closest('label');
                         if (parent) labelText = parent.innerText.trim();
                     }
-                    if (labelText) sizes.push(labelText);
+                    if (labelText && !isJunkSize(labelText)) sizes.push(labelText);
                 });
             }
         }
@@ -124,7 +137,7 @@ if (!window.baggedScraperLoaded) {
                 const items = Array.from(container.querySelectorAll('button, li, [role="radio"], .swatch, [class*="item"], [class*="value"], [class*="option"], span'));
                 const textOptions = items
                     .map(item => (item.innerText || item.textContent || '').replace(/\s+/g, ' ').trim())
-                    .filter(txt => txt && txt.length > 0 && txt.length < 30 && !/^(?:select|size|choose a size|size guide|find your size)$/i.test(txt));
+                    .filter(txt => !isJunkSize(txt));
                 if (textOptions.length > 0 && textOptions.length < 40) {
                     sizes = [...new Set(textOptions)];
                     break;
@@ -143,13 +156,13 @@ if (!window.baggedScraperLoaded) {
                         if (item.offers) {
                             const offers = Array.isArray(item.offers) ? item.offers : [item.offers];
                             offers.forEach(off => {
-                                if (off.name && !/^(?:select|size)$/i.test(off.name)) sizes.push(off.name);
+                                if (off.name && !isJunkSize(off.name)) sizes.push(off.name);
                             });
                         }
                         if (item.hasVariant) {
                             item.hasVariant.forEach(v => {
-                                if (v.size) sizes.push(v.size);
-                                else if (v.name) sizes.push(v.name);
+                                if (v.size && !isJunkSize(v.size)) sizes.push(v.size);
+                                else if (v.name && !isJunkSize(v.name)) sizes.push(v.name);
                             });
                         }
                     }
@@ -160,10 +173,10 @@ if (!window.baggedScraperLoaded) {
         // 5. Fallback to activeSize if sizes array is empty
         if (sizes.length === 0) {
             const active = getActiveSize();
-            if (active) sizes = [active];
+            if (active && !isJunkSize(active)) sizes = [active];
         }
         
-        return [...new Set(sizes)].slice(0, 20);
+        return [...new Set(sizes)].filter(s => !isJunkSize(s)).slice(0, 20);
     }
 
     function getColours() {
