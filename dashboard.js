@@ -601,7 +601,8 @@ function renderCheckoutCartItems() {
     let subtotalNumeric = 0;
 
     unifiedCartSummaryList.innerHTML = checkoutCart.map((item, index) => {
-        const numericMatch = (item.price || '').match(/[\d,.]+/);
+        const cleanPriceStr = (item.price || '').replace(/Â/g, '');
+        const numericMatch = cleanPriceStr.match(/[\d,.]+/);
         let unitPrice = 0;
         if (numericMatch) {
             unitPrice = parseFloat(numericMatch[0].replace(/,/g, ''));
@@ -610,19 +611,41 @@ function renderCheckoutCartItems() {
         const lineTotal = unitPrice * itemQty;
         subtotalNumeric += lineTotal;
 
-        const sizeOptionsHTML = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0)
-            ? `<select class="checkout-item-size-select" data-index="${index}" style="padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fff;">
-                <option value="">Size</option>
-                ${item.sizes.map(s => `<option value="${s}" ${s === item.size ? 'selected' : ''}>${s}</option>`).join('')}
-              </select>`
-            : (item.size ? `<span style="font-size: 10px; color: #666; background: #fff; padding: 2px 6px; border: 1px solid #eee; border-radius: 3px;">Size: ${item.size}</span>` : '');
+        const currentSize = item.size || item.activeSize || '';
+        const currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) 
+            ? item.sizes 
+            : (currentSize ? [currentSize] : []);
 
-        const colorOptionsHTML = (item.colors && Array.isArray(item.colors) && item.colors.length > 0)
-            ? `<select class="checkout-item-color-select" data-index="${index}" style="padding: 4px 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 10px; background: #fff;">
-                <option value="">Colour</option>
-                ${item.colors.map(c => `<option value="${c}" ${c === item.color ? 'selected' : ''}>${c}</option>`).join('')}
-              </select>`
-            : (item.color ? `<span style="font-size: 10px; color: #666; background: #fff; padding: 2px 6px; border: 1px solid #eee; border-radius: 3px;">Col: ${item.color}</span>` : '');
+        let sizeOptionsHTML = '';
+        if (currentSizes.length > 0) {
+            let opts = ['<option value="">Size</option>'];
+            currentSizes.forEach(s => {
+                opts.push(`<option value="${s}" ${s === currentSize ? 'selected' : ''}>${s}</option>`);
+            });
+            sizeOptionsHTML = `
+                <select class="checkout-item-size-select" data-index="${index}" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff;">
+                    ${opts.join('')}
+                </select>
+            `;
+        }
+
+        const currentColor = item.color || item.activeColor || '';
+        const currentColors = (item.colors && Array.isArray(item.colors) && item.colors.length > 0) 
+            ? item.colors 
+            : (currentColor ? [currentColor] : []);
+
+        let colorOptionsHTML = '';
+        if (currentColors.length > 0) {
+            let opts = ['<option value="">Colour</option>'];
+            currentColors.forEach(c => {
+                opts.push(`<option value="${c}" ${c === currentColor ? 'selected' : ''}>${c}</option>`);
+            });
+            colorOptionsHTML = `
+                <select class="checkout-item-color-select" data-index="${index}" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; outline: none; background: #fff;">
+                    ${opts.join('')}
+                </select>
+            `;
+        }
 
         return `
             <div style="position: relative; display: flex; gap: 14px; align-items: center; padding: 14px; border: 1px solid #eee; border-radius: 10px; background: #fafafa;">
@@ -648,7 +671,7 @@ function renderCheckoutCartItems() {
                     </div>
                 </div>
                 <div style="font-size: 13px; font-weight: 700; color: #000; text-align: right;">
-                    ${unitPrice > 0 ? `£${lineTotal.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : item.price}
+                    ${unitPrice > 0 ? `£${lineTotal.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : cleanPriceStr}
                 </div>
             </div>
         `;
@@ -659,7 +682,12 @@ function renderCheckoutCartItems() {
 }
 
 function updateCheckoutTotals(subtotalNumeric) {
-    const formattedSubtotal = subtotalNumeric > 0 ? `£${subtotalNumeric.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : (checkoutCart[0]?.price || '£0.00');
+    let formattedSubtotal = '£0.00';
+    if (subtotalNumeric > 0) {
+        formattedSubtotal = `£${subtotalNumeric.toLocaleString('en-GB', { minimumFractionDigits: 2 })}`;
+    } else if (checkoutCart[0]?.price) {
+        formattedSubtotal = checkoutCart[0].price.replace(/Â/g, '');
+    }
     
     ['checkout-subtotal-step1', 'checkout-total-step1', 'checkout-subtotal-step3', 'checkout-total-step3'].forEach(id => {
         const el = document.getElementById(id);
@@ -759,18 +787,21 @@ function goToCheckoutStep(step) {
         }
     });
 
-    if (checkoutBackStepBtn) checkoutBackStepBtn.style.display = step > 1 ? 'block' : 'none';
+    if (checkoutBackStepBtn) {
+        checkoutBackStepBtn.style.display = step > 1 ? 'block' : 'none';
+        checkoutBackStepBtn.innerHTML = '&larr; BACK';
+    }
 
     if (checkoutNextStepBtn) {
         if (step === 1) {
-            checkoutNextStepBtn.textContent = 'PROCEED TO SHIPPING →';
+            checkoutNextStepBtn.innerHTML = 'PROCEED TO SHIPPING &rarr;';
             checkoutNextStepBtn.style.background = '#000';
         } else if (step === 2) {
-            checkoutNextStepBtn.textContent = 'PROCEED TO PAYMENT →';
+            checkoutNextStepBtn.innerHTML = 'PROCEED TO PAYMENT &rarr;';
             checkoutNextStepBtn.style.background = '#000';
         } else if (step === 3) {
             const totalText = document.getElementById('checkout-total-step3')?.textContent || '';
-            checkoutNextStepBtn.textContent = `PAY & PLACE UNIFIED ORDER (${totalText})`;
+            checkoutNextStepBtn.innerHTML = `PAY & PLACE UNIFIED ORDER (${totalText})`;
             checkoutNextStepBtn.style.background = '#000';
         }
     }
