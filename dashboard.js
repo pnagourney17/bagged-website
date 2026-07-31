@@ -158,9 +158,34 @@ if (publicSharedParams) {
 }
 
 // ========== CHECKOUT CART ==========
-const checkoutCart = [];
+let checkoutCart = [];
+
+function loadCheckoutCartFromStorage() {
+    try {
+        const stored = localStorage.getItem('baggedCheckoutCart');
+        if (stored) {
+            checkoutCart = JSON.parse(stored);
+            if (!Array.isArray(checkoutCart)) checkoutCart = [];
+        }
+    } catch (e) {
+        console.error("Error loading checkout cart from storage:", e);
+        checkoutCart = [];
+    }
+}
+
+function saveCheckoutCartToStorage() {
+    try {
+        localStorage.setItem('baggedCheckoutCart', JSON.stringify(checkoutCart));
+    } catch (e) {
+        console.error("Error saving checkout cart to storage:", e);
+    }
+}
+
+// Initialize persisted cart on load
+loadCheckoutCartFromStorage();
 
 function updateCartDropdown() {
+    saveCheckoutCartToStorage();
     const cartItems = document.getElementById('cart-items');
     const cartCount = document.getElementById('cart-count');
     const checkoutBtn = document.getElementById('checkout-all-btn');
@@ -194,11 +219,12 @@ function removeFromCart(itemId) {
     const index = checkoutCart.findIndex(item => item.id === itemId);
     if (index >= 0) {
         checkoutCart.splice(index, 1);
+        saveCheckoutCartToStorage();
         updateCartDropdown();
         const btn = document.querySelector(`.add-checkout-btn[data-id="${itemId}"]`);
         if (btn) {
-            btn.textContent = '+ add to checkout';
-            btn.style.color = '#000';
+            btn.textContent = 'Add to Checkout';
+            btn.style.background = '#000';
         }
     }
 }
@@ -1035,6 +1061,10 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         </div>
     ` : '';
 
+    const isInCart = checkoutCart.some(cartItem => cartItem.id === itemId);
+    const checkoutBtnText = isInCart ? 'Added!' : 'Add to Checkout';
+    const checkoutBtnBg = isInCart ? '#27ae60' : '#000';
+
     card.innerHTML = `
         <div class="image-container" style="position: relative; width: 100%; height: 280px; margin-bottom: 15px; overflow: hidden; border-radius: 12px; background: #f9f9f9;">
             <a href="${productUrl}" target="_blank" style="display: block; width: 100%; height: 100%;">
@@ -1065,7 +1095,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             ${isSoldOut ? `
                 <button class="add-checkout-btn disabled" disabled style="background: #e5e5e5; color: #888; border: 1px solid #e5e5e5; border-radius: 4px; height: 38px; cursor: not-allowed; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">Sold Out</button>
             ` : `
-                <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${cleanPrice(item.price)}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+                <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${cleanPrice(item.price)}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: ${checkoutBtnBg}; color: #fff; border: 1px solid ${checkoutBtnBg}; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">${checkoutBtnText}</button>
             `}
         </div>
     `;
