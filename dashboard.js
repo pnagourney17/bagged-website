@@ -1002,19 +1002,19 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     const productUrl = item.url || '#';
     const isSoldOut = Boolean(item.soldOut || item.isSoldOut || item.status === 'sold_out' || item.outOfStock || item.inStock === false);
 
-    // Build size element (Guaranteed to always render for every PDP)
-    const isFootwear = /boot|shoe|sandal|sneaker|heel|mule|flat|loafers|pumps|footwear|slides|clogs/i.test((item.name || '') + ' ' + (item.url || ''));
-    const defaultFallbackSizes = isFootwear 
-        ? ['UK 3', 'UK 4', 'UK 5', 'UK 6', 'UK 7', 'UK 8']
-        : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
+    // Build size element (strictly preserve exact PDP size run if available)
     const currentSize = item.size || item.activeSize || '';
-    let currentSizes = (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) 
-        ? item.sizes 
-        : (currentSize ? [...new Set([currentSize, ...defaultFallbackSizes])] : defaultFallbackSizes);
+    let currentSizes = [];
 
-    if (!currentSizes || currentSizes.length === 0) {
-        currentSizes = defaultFallbackSizes;
+    if (item.sizes && Array.isArray(item.sizes) && item.sizes.length > 0) {
+        currentSizes = item.sizes;
+    } else if (currentSize) {
+        currentSizes = [currentSize];
+    } else {
+        const isFootwear = /boot|shoe|sandal|sneaker|heel|mule|flat|loafers|pumps|footwear|slides|clogs/i.test((item.name || '') + ' ' + (item.url || ''));
+        currentSizes = isFootwear 
+            ? ['UK 3', 'UK 4', 'UK 5', 'UK 6', 'UK 7', 'UK 8']
+            : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     }
 
     let sizeElement = '';
