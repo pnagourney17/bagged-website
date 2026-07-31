@@ -179,17 +179,9 @@ function updateCartDropdown() {
                         ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
                     </div>
                 </div>
-                <button class="cart-remove-btn" data-id="${item.id}" style="background: none; border: none; cursor: pointer; color: #999; font-size: 16px; padding: 5px;">×</button>
             </div>
         `).join('');
         checkoutBtn.style.opacity = '1';
-
-        // Set up programmatic click listeners to satisfy CSP
-        cartItems.querySelectorAll('.cart-remove-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                removeFromCart(btn.dataset.id);
-            });
-        });
     }
 }
 
