@@ -617,20 +617,13 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
 
         ${optionsHTML}
 
-        <div class="cta-row" style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
-            <div style="display: flex; gap: 8px;">
-                ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
-                ${isSoldOut ? `
-                    <button class="add-checkout-btn disabled" disabled style="background: #e5e5e5; color: #888; border: 1px solid #e5e5e5; border-radius: 4px; height: 38px; cursor: not-allowed; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">Sold Out</button>
-                ` : `
-                    <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
-                `}
-            </div>
-            ${!isSharedView ? `
-                <button class="toggle-sold-out-btn" data-id="${itemId}" style="background: none; border: 1px dashed #ccc; color: #666; border-radius: 4px; height: 26px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; width: 100%; transition: all 0.2s; margin-top: 2px;">
-                    ${isSoldOut ? 'Mark as In Stock' : 'Mark as Sold Out'}
-                </button>
-            ` : ''}
+        <div class="cta-row" style="display: flex; gap: 8px; margin-top: auto;">
+            ${!isSharedView ? '<button class="remove-btn" style="background: #fff; color: #000; border: 1px solid #ddd; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">Remove</button>' : ''}
+            ${isSoldOut ? `
+                <button class="add-checkout-btn disabled" disabled style="background: #e5e5e5; color: #888; border: 1px solid #e5e5e5; border-radius: 4px; height: 38px; cursor: not-allowed; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">Sold Out</button>
+            ` : `
+                <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+            `}
         </div>
     `;
 
@@ -674,29 +667,6 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             removeBtn.onclick = async () => {
                 await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
                 card.remove();
-            };
-        }
-
-        const toggleSoldOutBtn = card.querySelector('.toggle-sold-out-btn');
-        if (toggleSoldOutBtn) {
-            toggleSoldOutBtn.addEventListener('mouseenter', () => { toggleSoldOutBtn.style.borderColor = '#999'; toggleSoldOutBtn.style.color = '#000'; });
-            toggleSoldOutBtn.addEventListener('mouseleave', () => { toggleSoldOutBtn.style.borderColor = '#ccc'; toggleSoldOutBtn.style.color = '#666'; });
-            toggleSoldOutBtn.onclick = async () => {
-                const newSoldOutState = !isSoldOut;
-                item.soldOut = newSoldOutState;
-                toggleSoldOutBtn.disabled = true;
-                toggleSoldOutBtn.textContent = 'Updating...';
-                try {
-                    await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).update({
-                        soldOut: newSoldOutState
-                    });
-                    const newCard = createCard(item, wishlistId, itemId, isSharedView, user);
-                    card.replaceWith(newCard);
-                } catch (e) {
-                    console.error('Failed to update sold out status:', e);
-                    toggleSoldOutBtn.disabled = false;
-                    toggleSoldOutBtn.textContent = isSoldOut ? 'Mark as In Stock' : 'Mark as Sold Out';
-                }
             };
         }
     }
