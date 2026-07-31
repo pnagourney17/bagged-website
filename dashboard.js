@@ -13,7 +13,12 @@ const db = firebase.firestore();
 
 function cleanPrice(price) {
     if (!price) return '£0.00';
-    return String(price).replace(/[Ââ]/g, '').trim();
+    let str = String(price).replace(/[Ââ]/g, '').trim();
+    const match = str.match(/([$£€¥₹]\s*[\d,]+(?:\.\d{2})?|[\d,]+(?:\.\d{2})?\s*(?:GBP|USD|EUR|AUD|CAD))/i);
+    if (match) {
+        return match[0].trim();
+    }
+    return str;
 }
 
 // ========== DASHBOARD AUTH GATE ==========
@@ -1075,7 +1080,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     card.innerHTML = `
         <div class="image-container" style="position: relative; width: 100%; height: 280px; margin-bottom: 15px; overflow: hidden; border-radius: 12px; background: #f9f9f9;">
             <a href="${productUrl}" target="_blank" style="display: block; width: 100%; height: 100%;">
-                <img src="${item.image}" style="width:100%; height:100%; object-fit:cover; cursor: pointer; transition: filter 0.3s; ${isSoldOut ? 'filter: grayscale(40%); opacity: 0.85;' : ''}">
+                <img src="${item.image}" onerror="this.onerror=null; this.src='https://via.placeholder.com/300x400?text=Product+Image';" style="width:100%; height:100%; object-fit:cover; cursor: pointer; transition: filter 0.3s; ${isSoldOut ? 'filter: grayscale(40%); opacity: 0.85;' : ''}">
             </a>
             ${isSoldOut ? `
                 <div class="sold-out-badge" style="position: absolute; top: 12px; left: 12px; background: rgba(0, 0, 0, 0.85); color: #ffffff; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 10px; border-radius: 4px; z-index: 2; backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">

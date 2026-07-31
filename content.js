@@ -17,15 +17,22 @@ if (!window.baggedScraperLoaded) {
 
             // Price detection
             const priceSelectors = [
-                '[class*="price"]', '[id*="price"]', '.amount', '.money',
+                '[class*="price" i]', '[id*="price" i]', '.amount', '.money',
                 'meta[property="og:price:amount"]', 'meta[name="twitter:data1"]'
             ];
 
             for (let selector of priceSelectors) {
                 const el = document.querySelector(selector);
-                if (el && el.innerText && el.innerText.match(/\d/)) {
-                    product.price = el.innerText.trim();
-                    break;
+                if (el) {
+                    const rawText = (el.content || el.innerText || el.textContent || '').replace(/[Ââ]/g, '').trim();
+                    const match = rawText.match(/([$£€¥₹]\s*[\d,]+(?:\.\d{2})?|[\d,]+(?:\.\d{2})?\s*(?:GBP|USD|EUR|AUD|CAD))/i);
+                    if (match) {
+                        product.price = match[0].trim();
+                        break;
+                    } else if (rawText && rawText.match(/\d/)) {
+                        product.price = rawText;
+                        break;
+                    }
                 }
             }
 
@@ -34,11 +41,22 @@ if (!window.baggedScraperLoaded) {
             if (ogImage && ogImage.content) {
                 product.image = ogImage.content;
             } else {
-                const productImg = document.querySelector('img[class*="product"]') ||
-                    document.querySelector('img[class*="gallery"]') ||
-                    document.querySelector('img[class*="main"]');
+                const productImg = document.querySelector('img[class*="product" i], img[id*="product" i]') ||
+                    document.querySelector('img[class*="gallery" i]') ||
+                    document.querySelector('img[class*="main" i]') ||
+                    document.querySelector('img[src*="cdn/shop" i]') ||
+                    document.querySelector('img[src*="products" i]');
                 if (productImg) {
-                    product.image = productImg.src;
+                    product.image = productImg.src || productImg.getAttribute('data-src') || productImg.getAttribute('srcset');
+                }
+            }
+
+            // Format protocol-relative or relative URLs
+            if (product.image) {
+                if (product.image.startsWith('//')) {
+                    product.image = 'https:' + product.image;
+                } else if (product.image.startsWith('/')) {
+                    product.image = window.location.origin + product.image;
                 }
             }
 
