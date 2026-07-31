@@ -11,6 +11,11 @@ if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const db = firebase.firestore();
 
+function cleanPrice(price) {
+    if (!price) return '£0.00';
+    return String(price).replace(/[Ââ]/g, '').trim();
+}
+
 // ========== DASHBOARD AUTH GATE ==========
 const sidebar = document.querySelector('.sidebar');
 const mainContent = document.querySelector('.main-content');
@@ -175,7 +180,7 @@ function updateCartDropdown() {
                     <div style="font-size: 11px; color: #888; text-transform: lowercase;">${item.brand}</div>
                     <div style="font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
                     <div style="font-size: 12px; font-weight: bold; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                        <span>${item.price}</span>
+                        <span>${cleanPrice(item.price)}</span>
                         ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
                     </div>
                 </div>
@@ -1045,7 +1050,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         <div class="name" style="font-weight:bold; margin: 5px 0;">${item.name}</div>
         
         <div class="price-row" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div class="price" style="${isSoldOut ? 'text-decoration: line-through; opacity: 0.55; margin-bottom: 0;' : ''}">${item.price}</div>
+            <div class="price" style="${isSoldOut ? 'text-decoration: line-through; opacity: 0.55; margin-bottom: 0;' : ''}">${cleanPrice(item.price)}</div>
             ${isSoldOut ? `
                 <span class="sold-out-tag" style="font-size: 9px; font-weight: 700; color: #d32f2f; background: #ffebee; padding: 3px 8px; border-radius: 4px; letter-spacing: 1px; text-transform: uppercase;">
                     Sold Out
@@ -1060,7 +1065,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             ${isSoldOut ? `
                 <button class="add-checkout-btn disabled" disabled style="background: #e5e5e5; color: #888; border: 1px solid #e5e5e5; border-radius: 4px; height: 38px; cursor: not-allowed; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;">Sold Out</button>
             ` : `
-                <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${item.price}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
+                <button class="add-checkout-btn" data-url="${productUrl}" data-id="${itemId}" data-name="${item.name}" data-brand="${item.brand || ''}" data-price="${cleanPrice(item.price)}" data-image="${item.image}" data-size="${item.size || ''}" data-color="${item.color || ''}" style="background: #000; color: #fff; border: 1px solid #000; border-radius: 4px; height: 38px; cursor: pointer; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; flex: 1; line-height: 1.2; display: flex; align-items: center; justify-content: center; text-align: center; transition: background 0.2s;">Add to Checkout</button>
             `}
         </div>
     `;
