@@ -509,13 +509,142 @@ function setupCartWidget() {
     if (checkoutAllBtn) {
         checkoutAllBtn.onclick = () => {
             if (checkoutCart.length === 0) return;
-            checkoutCart.forEach((item, index) => {
-                setTimeout(() => window.open(item.url, '_blank'), index * 300);
-            });
-            checkoutAllBtn.textContent = 'Opening...';
-            setTimeout(() => { checkoutAllBtn.textContent = 'Checkout All'; }, 2000);
+            openUnifiedCheckoutModal();
         };
     }
+}
+
+// ========== UNIFIED CHECKOUT MODAL LOGIC ==========
+const unifiedCheckoutModal = document.getElementById('unified-checkout-modal');
+const closeUnifiedCheckoutBtn = document.getElementById('close-unified-checkout');
+const submitPlaceUnifiedOrderBtn = document.getElementById('submit-place-unified-order');
+const unifiedCartSummaryList = document.getElementById('unified-cart-summary-list');
+const checkoutSubtotalEl = document.getElementById('checkout-subtotal');
+const checkoutTotalEl = document.getElementById('checkout-total');
+const checkoutErrorMsg = document.getElementById('checkout-error-msg');
+const successModal = document.getElementById('unified-order-success-modal');
+const closeSuccessModalBtn = document.getElementById('close-success-modal-btn');
+const successOrderIdEl = document.getElementById('success-order-id');
+
+function openUnifiedCheckoutModal() {
+    if (!unifiedCheckoutModal || checkoutCart.length === 0) return;
+
+    let subtotalNumeric = 0;
+    unifiedCartSummaryList.innerHTML = checkoutCart.map((item) => {
+        const numericMatch = (item.price || '').match(/[\d,.]+/);
+        if (numericMatch) {
+            const val = parseFloat(numericMatch[0].replace(/,/g, ''));
+            if (!isNaN(val)) subtotalNumeric += val;
+        }
+
+        return `
+            <div style="display: flex; gap: 14px; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 8px; background: #fafafa;">
+                <img src="${item.image}" style="width: 54px; height: 54px; object-fit: cover; border-radius: 6px; background: #fff;">
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 10px; color: #888; font-weight: 700; text-transform: lowercase; letter-spacing: 0.5px;">${item.brand || ''}</div>
+                    <div style="font-size: 13px; font-weight: 600; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #111;">${item.name || ''}</div>
+                    <div style="font-size: 11px; color: #666; margin-top: 2px; display: flex; gap: 8px; font-weight: 500;">
+                        ${item.size ? `<span>Size: <strong>${item.size}</strong></span>` : ''}
+                        ${item.color ? `<span>Color: <strong>${item.color}</strong></span>` : ''}
+                    </div>
+                </div>
+                <div style="font-size: 13px; font-weight: 700; color: #000;">${item.price || ''}</div>
+            </div>
+        `;
+    }).join('');
+
+    const formattedSubtotal = subtotalNumeric > 0 ? `£${subtotalNumeric.toLocaleString('en-GB', { minimumFractionDigits: 2 })}` : (checkoutCart[0]?.price || '£0.00');
+    if (checkoutSubtotalEl) checkoutSubtotalEl.textContent = formattedSubtotal;
+    if (checkoutTotalEl) checkoutTotalEl.textContent = formattedSubtotal;
+    if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+
+    const user = auth.currentUser;
+    if (user && user.email) {
+        const emailInput = document.getElementById('checkout-email');
+        if (emailInput && !emailInput.value) emailInput.value = user.email;
+    }
+
+    unifiedCheckoutModal.style.display = 'flex';
+    setTimeout(() => { unifiedCheckoutModal.style.opacity = '1'; }, 10);
+}
+
+function closeUnifiedCheckoutModal() {
+    if (!unifiedCheckoutModal) return;
+    unifiedCheckoutModal.style.opacity = '0';
+    setTimeout(() => { unifiedCheckoutModal.style.display = 'none'; }, 300);
+}
+
+if (closeUnifiedCheckoutBtn) {
+    closeUnifiedCheckoutBtn.onclick = closeUnifiedCheckoutModal;
+}
+
+if (submitPlaceUnifiedOrderBtn) {
+    submitPlaceUnifiedOrderBtn.onclick = async () => {
+        const firstName = (document.getElementById('checkout-first-name')?.value || '').trim();
+        const lastName = (document.getElementById('checkout-last-name')?.value || '').trim();
+        const address = (document.getElementById('checkout-address')?.value || '').trim();
+        const city = (document.getElementById('checkout-city')?.value || '').trim();
+        const postcode = (document.getElementById('checkout-postcode')?.value || '').trim();
+        const email = (document.getElementById('checkout-email')?.value || '').trim();
+
+        if (!firstName || !lastName || !address || !city || !postcode || !email) {
+            if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Please fill out all required shipping fields.';
+            return;
+        }
+
+        submitPlaceUnifiedOrderBtn.disabled = true;
+        submitPlaceUnifiedOrderBtn.textContent = 'PLACING ORDER...';
+        if (checkoutErrorMsg) checkoutErrorMsg.textContent = '';
+
+        try {
+            const user = auth.currentUser;
+            const orderRefId = 'BG-' + Math.floor(100000 + Math.random() * 900000);
+            const orderData = {
+                orderId: orderRefId,
+                items: checkoutCart,
+                shippingAddress: {
+                    firstName,
+                    lastName,
+                    address,
+                    city,
+                    postcode,
+                    email
+                },
+                status: 'pending_fulfillment',
+                totalAmount: checkoutTotalEl ? checkoutTotalEl.textContent : '£0.00',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (user) {
+                await db.collection('users').doc(user.uid).collection('orders').doc(orderRefId).set(orderData);
+            }
+
+            closeUnifiedCheckoutModal();
+
+            checkoutCart = [];
+            updateCartDropdown();
+
+            if (successOrderIdEl) successOrderIdEl.textContent = '#' + orderRefId;
+            if (successModal) {
+                successModal.style.display = 'flex';
+                setTimeout(() => { successModal.style.opacity = '1'; }, 10);
+            }
+        } catch (e) {
+            console.error("Error creating order:", e);
+            if (checkoutErrorMsg) checkoutErrorMsg.textContent = 'Failed to place order. Please try again.';
+        } finally {
+            submitPlaceUnifiedOrderBtn.disabled = false;
+            submitPlaceUnifiedOrderBtn.textContent = 'PLACE UNIFIED ORDER';
+        }
+    };
+}
+
+if (closeSuccessModalBtn) {
+    closeSuccessModalBtn.onclick = () => {
+        if (!successModal) return;
+        successModal.style.opacity = '0';
+        setTimeout(() => { successModal.style.display = 'none'; }, 300);
+    };
 }
 
 function createCard(item, wishlistId, itemId, isSharedView = false, user) {
