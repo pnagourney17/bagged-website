@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bagged",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "permissions": [
     "activeTab",
     "scripting"

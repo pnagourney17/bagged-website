@@ -50,33 +50,38 @@ if (!window.baggedScraperLoaded) {
     function isJunkSize(txt) {
         if (!txt || txt.length === 0 || txt.length > 35) return true;
         const lower = txt.toLowerCase().trim();
-        if (/^(?:select|size|choose|select a size)$/i.test(lower)) return true;
+        if (/^(?:select|size|choose|select a size|add|add to bag|add to basket|add to cart)$/i.test(lower)) return true;
         const junkKeywords = [
             'product measurements', 'measurements', 'size guide', 'find your size',
             'what is my size', 'check in-store', 'view size chart', 'size info',
-            'how to measure', 'fit guide', 'size assistance', 'add to bag', 'add to cart'
+            'how to measure', 'fit guide', 'size assistance', 'add to bag', 'add to cart',
+            'add to basket', 'add', 'process order', 'buy now', 'checkout'
         ];
-        return junkKeywords.some(keyword => lower.includes(keyword));
+        return junkKeywords.some(keyword => lower === keyword || lower.startsWith(keyword));
     }
 
     function getSizes() {
         let sizes = [];
 
-        // 0. Zara Specific Targeted Selectors
+        // 0. Zara Specific Targeted Selectors for size labels
         const zaraSizeEls = document.querySelectorAll(`
+            .product-detail-size-selector__size-list-item-name,
+            [data-qa-action="size-selector-sizes-size-link"] span,
+            [data-qa-action="size-selector-sizes-size"] span,
+            .size-selector-sizes__size-label,
             .product-detail-size-selector__size-list-item,
-            [data-qa-action="size-selector-sizes-size"],
             [data-qa-action="size-selector-sizes-size-link"],
-            .size-selector-sizes__size,
             [class*="size-selector-sizes"] li,
-            [class*="size-selector-sizes"] button,
-            [class*="size-selector"] li span,
             [class*="product-size-selector"] li
         `);
 
         if (zaraSizeEls.length > 0) {
             zaraSizeEls.forEach(el => {
                 let txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+                if (el.children.length > 0) {
+                    const labelEl = el.querySelector('[class*="name"], [class*="label"], span');
+                    if (labelEl) txt = (labelEl.innerText || labelEl.textContent || '').replace(/\s+/g, ' ').trim();
+                }
                 if (!isJunkSize(txt)) {
                     sizes.push(txt);
                 }
@@ -145,28 +150,20 @@ if (!window.baggedScraperLoaded) {
             }
         }
 
-        // 4. Check JSON-LD schema tags for size variants
+        // 4. Scan page scripts for Zara product variants JSON
         if (sizes.length === 0) {
-            const scripts = document.querySelectorAll('script[type="application/ld+json"]');
+            const scripts = document.querySelectorAll('script');
             for (let script of scripts) {
-                try {
-                    const data = JSON.parse(script.innerText);
-                    const items = Array.isArray(data) ? data : [data];
-                    for (let item of items) {
-                        if (item.offers) {
-                            const offers = Array.isArray(item.offers) ? item.offers : [item.offers];
-                            offers.forEach(off => {
-                                if (off.name && !isJunkSize(off.name)) sizes.push(off.name);
-                            });
-                        }
-                        if (item.hasVariant) {
-                            item.hasVariant.forEach(v => {
-                                if (v.size && !isJunkSize(v.size)) sizes.push(v.size);
-                                else if (v.name && !isJunkSize(v.name)) sizes.push(v.name);
-                            });
-                        }
+                const content = script.innerText || '';
+                if (content.includes('sizes') || content.includes('size')) {
+                    const matches = content.match(/"name"\s*:\s*"(XXS|XS|S|M|L|XL|XXL|XXXL|[0-9]{2}(?:\.[0-9])?)"/gi);
+                    if (matches) {
+                        matches.forEach(m => {
+                            const val = m.replace(/"name"\s*:\s*"/i, '').replace('"', '').trim();
+                            if (!isJunkSize(val)) sizes.push(val);
+                        });
                     }
-                } catch(e) {}
+                }
             }
         }
 
