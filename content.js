@@ -65,10 +65,12 @@ if (!window.baggedScraperLoaded) {
     function extractClothingSizeCode(rawText) {
         if (!rawText) return null;
         const clean = rawText.trim();
-        const match = clean.match(/^(XXS|XS|S|M|L|XL|XXL|XXXL|[0-9]{1,2}(?:\.[0-9])?|UK\s*[0-9]{1,2}|EU\s*[0-9]{1,2}|US\s*[0-9]{1,2}|IT\s*[0-9]{1,2})(?:\s+|$)/i);
+        if (isJunkSize(clean)) return null;
+
+        const match = clean.match(/^(XXS|XS|S|M|L|XL|XXL|XXXL|OS|ONE SIZE|O\/S|(?:FR|IT|UK|EU|US|DE|JP|AU|CN|KR)\s*[0-9]{1,2}(?:\.[0-9])?|[0-9]{2}(?:\.[0-9])?)(?:\s+|$)/i);
         if (match) {
             let code = match[1].toUpperCase();
-            if (/few items left/i.test(clean)) return `${code} (Few left)`;
+            if (/few items left|only 1 left|only \d+ left|low stock/i.test(clean)) return `${code} (Low stock)`;
             if (/coming soon/i.test(clean)) return `${code} (Coming soon)`;
             if (/view similar|out of stock|sold out/i.test(clean)) return `${code} (Sold out)`;
             return code;
@@ -79,34 +81,8 @@ if (!window.baggedScraperLoaded) {
     function getSizes() {
         let sizes = [];
 
-        // 0. Zara & Fast Fashion Targeted Selectors
-        const zaraSizeEls = document.querySelectorAll(`
-            .product-detail-size-selector__size-list-item,
-            .product-detail-size-selector__size-list-item-name,
-            [data-qa-action="size-selector-sizes-size"],
-            [data-qa-action="size-selector-sizes-size-link"],
-            .size-selector-sizes__size,
-            [class*="size-selector"] li,
-            [class*="product-size-selector"] li,
-            [class*="size-selector-sizes"] button,
-            [class*="product-detail-size"] li
-        `);
-
-        if (zaraSizeEls.length > 0) {
-            zaraSizeEls.forEach(el => {
-                let txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
-                const parsedCode = extractClothingSizeCode(txt);
-                if (parsedCode) {
-                    sizes.push(parsedCode);
-                } else if (!isJunkSize(txt)) {
-                    sizes.push(txt);
-                }
-            });
-            if (sizes.length > 0) return [...new Set(sizes)].filter(s => !isJunkSize(s)).slice(0, 20);
-        }
-
-        // 1. Check all select elements and custom dropdowns
-        const selects = Array.from(document.querySelectorAll('select, [data-qa*="size" i], [class*="size-selector" i], [class*="SizeSelector" i], [class*="select-size" i], [class*="SizeDropdown" i]'));
+        // 0. Check all select elements across luxury & fast-fashion stores
+        const selects = Array.from(document.querySelectorAll('select, [data-qa*="size" i], [class*="size-selector" i], [class*="SizeSelector" i], [class*="select-size" i], [class*="SizeDropdown" i], [name*="size" i]'));
         for (let select of selects) {
             const attrStr = (select.id + ' ' + select.className + ' ' + select.name + ' ' + (select.getAttribute('aria-label') || '') + ' ' + (select.getAttribute('data-qa') || '')).toLowerCase();
             if (attrStr.includes('size') || attrStr.includes('dimension') || select.tagName === 'SELECT') {
@@ -114,6 +90,7 @@ if (!window.baggedScraperLoaded) {
                 if (select.tagName === 'SELECT') {
                     options = Array.from(select.options)
                         .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
+                        .map(txt => extractClothingSizeCode(txt) || txt)
                         .filter(txt => !isJunkSize(txt));
                 } else {
                     const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
@@ -128,7 +105,37 @@ if (!window.baggedScraperLoaded) {
                 }
             }
         }
-        
+
+        // 1. Zara & Custom Retailer Size Selectors
+        if (sizes.length === 0) {
+            const sizeEls = document.querySelectorAll(`
+                .product-detail-size-selector__size-list-item,
+                .product-detail-size-selector__size-list-item-name,
+                [data-qa-action="size-selector-sizes-size"],
+                [data-qa-action="size-selector-sizes-size-link"],
+                .size-selector-sizes__size,
+                [class*="size-selector"] li,
+                [class*="product-size-selector"] li,
+                [class*="size-selector-sizes"] button,
+                [class*="product-detail-size"] li,
+                [class*="SizeSelector"] li,
+                [class*="SizeSelector"] button,
+                [class*="sizeItem"]
+            `);
+
+            if (sizeEls.length > 0) {
+                sizeEls.forEach(el => {
+                    let txt = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
+                    const parsedCode = extractClothingSizeCode(txt);
+                    if (parsedCode) {
+                        sizes.push(parsedCode);
+                    } else if (!isJunkSize(txt)) {
+                        sizes.push(txt);
+                    }
+                });
+            }
+        }
+
         // 2. Check radio inputs
         if (sizes.length === 0) {
             const radios = Array.from(document.querySelectorAll('input[type="radio"]'));
@@ -168,13 +175,13 @@ if (!window.baggedScraperLoaded) {
             }
         }
 
-        // 4. Scan page text & scripts for Zara product variants
+        // 4. Scan page text & scripts for product variants JSON (FR, IT, UK, EU, US)
         if (sizes.length === 0) {
             const scripts = document.querySelectorAll('script');
             for (let script of scripts) {
                 const content = script.innerText || '';
-                if (content.includes('sizes') || content.includes('size')) {
-                    const matches = content.match(/"name"\s*:\s*"(XXS|XS|S|M|L|XL|XXL|XXXL|[0-9]{2}(?:\.[0-9])?)"/gi);
+                if (content.includes('sizes') || content.includes('size') || content.includes('variants')) {
+                    const matches = content.match(/"name"\s*:\s*"((?:FR|IT|UK|EU|US|DE)?\s*[0-9]{2}(?:\.[0-9])?|XXS|XS|S|M|L|XL|XXL|XXXL)"/gi);
                     if (matches) {
                         matches.forEach(m => {
                             const val = m.replace(/"name"\s*:\s*"/i, '').replace('"', '').trim();
