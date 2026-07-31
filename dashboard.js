@@ -1116,7 +1116,6 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
         }
     };
 
-    if (!isSharedView) {
     function getCartKey(id, size, color) {
         return `${id}_${size || ''}_${color || ''}`;
     }
