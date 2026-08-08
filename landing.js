@@ -21,6 +21,20 @@ auth.onAuthStateChanged((user) => {
         window.location.href = 'dashboard.html';
     }
 });
+// ========== ABOUT / WHAT'S BAGGED SCROLL ==========
+function checkScrollToWhatsBagged() {
+    if (window.location.search.includes('view=about') || window.location.hash === '#whats-bagged') {
+        const section = document.getElementById('whats-bagged');
+        if (section) {
+            setTimeout(() => {
+                section.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', checkScrollToWhatsBagged);
+window.addEventListener('load', checkScrollToWhatsBagged);
 
 // ========== UI LOGIC ==========
 let authMode = 'login'; // 'login' or 'signup'
