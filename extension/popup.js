@@ -7,133 +7,155 @@ const firebaseConfig = {
     appId: "1:103392647585:web:edd49907154bd481a193e0"
 };
 
-if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-const auth = firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION))
-    .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE))
-    .catch(err => console.warn("Auth persistence notice:", err));
-const db = firebase.firestore();
-
-// ========== AUTH UI ==========
-const loginView = document.getElementById('login-view');
-const appView = document.getElementById('app-view');
-const authEmail = document.getElementById('auth-email');
-const authPassword = document.getElementById('auth-password');
-const authConfirmPassword = document.getElementById('auth-confirm-password');
-const confirmWrapper = document.getElementById('confirm-password-wrapper');
-const authSubmitBtn = document.getElementById('auth-submit-btn');
-const authError = document.getElementById('auth-error');
-const authToggleLink = document.getElementById('auth-toggle-link');
-const authToggleText = document.getElementById('auth-toggle-text');
-
+let auth = null;
+let db = null;
 let isSignUp = false;
 
-// Toggle between sign in / create account
-authToggleLink.addEventListener('click', () => {
-    isSignUp = !isSignUp;
-    authError.innerText = '';
-    authConfirmPassword.value = '';
-    if (isSignUp) {
-        authSubmitBtn.innerText = 'create account';
-        authToggleText.innerText = 'already have an account? ';
-        authToggleLink.innerText = 'sign in';
-        authPassword.setAttribute('autocomplete', 'new-password');
-        confirmWrapper.classList.add('show');
-    } else {
-        authSubmitBtn.innerText = 'sign in';
-        authToggleText.innerText = "don't have an account? ";
-        authToggleLink.innerText = 'create one';
-        authPassword.setAttribute('autocomplete', 'current-password');
-        confirmWrapper.classList.remove('show');
+try {
+    if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        auth = firebase.auth();
+        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+            .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION))
+            .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE))
+            .catch(err => console.warn("Auth persistence notice:", err));
+        db = firebase.firestore();
     }
-});
-
-// Show/hide password toggles
-function setupPasswordToggle(toggleBtn, inputField) {
-    toggleBtn.addEventListener('click', () => {
-        const isHidden = inputField.type === 'password';
-        inputField.type = isHidden ? 'text' : 'password';
-        toggleBtn.textContent = isHidden ? 'hide' : 'show';
-        toggleBtn.classList.toggle('active', isHidden);
-        toggleBtn.title = isHidden ? 'Hide password' : 'Show password';
-    });
+} catch (e) {
+    console.warn("Firebase SDK init notice:", e);
 }
 
-setupPasswordToggle(document.getElementById('toggle-auth-password'), authPassword);
-setupPasswordToggle(document.getElementById('toggle-auth-confirm'), authConfirmPassword);
+function friendlyError(code) {
+    console.log('Auth error code:', code);
+    const map = {
+        'auth/email-already-in-use': 'an account with this email already exists',
+        'EMAIL_EXISTS': 'an account with this email already exists',
+        'auth/invalid-email': 'please enter a valid email address',
+        'INVALID_EMAIL': 'please enter a valid email address',
+        'auth/user-not-found': 'no account found with this email',
+        'EMAIL_NOT_FOUND': 'no account found with this email',
+        'auth/wrong-password': 'incorrect password',
+        'INVALID_PASSWORD': 'incorrect password',
+        'INVALID_LOGIN_CREDENTIALS': 'incorrect email or password',
+        'auth/invalid-credential': 'incorrect email or password',
+        'auth/weak-password': 'password must be at least 6 characters',
+        'WEAK_PASSWORD': 'password must be at least 6 characters',
+        'auth/too-many-requests': 'too many attempts - please try again later',
+        'TOO_MANY_ATTEMPTS_TRY_LATER': 'too many attempts - please try again later',
+        'auth/network-request-failed': 'network error - check your connection',
+        'auth/user-disabled': 'this account has been disabled',
+        'USER_DISABLED': 'this account has been disabled',
+    };
+    return map[code] || 'error: ' + (code || 'unknown') + ' - please try again';
+}
 
-// Submit handler
+// Global Submit Handler
 async function handleAuthSubmit(e) {
-    if (e) e.preventDefault();
+    if (e) {
+        try { e.preventDefault(); } catch (_) {}
+        try { e.stopPropagation(); } catch (_) {}
+    }
+
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const authConfirmPassword = document.getElementById('auth-confirm-password');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const authError = document.getElementById('auth-error');
+
+    if (!authEmail || !authPassword) return false;
+
     const email = authEmail.value.trim();
     const password = authPassword.value;
-    authError.innerText = '';
+    if (authError) authError.innerText = '';
 
     if (!email || !password) {
-        authError.innerText = 'please enter your email and password';
-        return;
+        if (authError) authError.innerText = 'please enter your email and password';
+        return false;
     }
 
-    if (isSignUp) {
+    if (isSignUp && authConfirmPassword) {
         const confirmPass = authConfirmPassword.value;
         if (!confirmPass) {
-            authError.innerText = 'please confirm your password';
+            if (authError) authError.innerText = 'please confirm your password';
             authConfirmPassword.focus();
-            return;
+            return false;
         }
         if (password !== confirmPass) {
-            authError.innerText = 'passwords do not match';
+            if (authError) authError.innerText = 'passwords do not match';
             authConfirmPassword.focus();
-            return;
+            return false;
         }
     }
 
-    authSubmitBtn.disabled = true;
-    authSubmitBtn.innerText = isSignUp ? 'creating...' : 'signing in...';
+    if (authSubmitBtn) {
+        authSubmitBtn.disabled = true;
+        authSubmitBtn.innerText = isSignUp ? 'creating...' : 'signing in...';
+    }
 
-    try {
-        if (isSignUp) {
-            await auth.createUserWithEmailAndPassword(email, password);
-        } else {
-            await auth.signInWithEmailAndPassword(email, password);
-        }
-    } catch (err) {
-        console.error("Popup Auth SDK notice, trying direct REST fallback:", err);
-        
-        // Direct REST API Fallback for iOS Safari Extension Popups
+    // 1. Try Firebase Auth SDK first if available
+    if (auth) {
         try {
-            const endpoint = isSignUp 
-                ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
-                : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
-            
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, returnSecureToken: true })
-            });
+            if (isSignUp) {
+                await auth.createUserWithEmailAndPassword(email, password);
+                return false;
+            } else {
+                await auth.signInWithEmailAndPassword(email, password);
+                return false;
+            }
+        } catch (sdkErr) {
+            console.warn("SDK Auth failed, switching to direct REST API:", sdkErr);
+        }
+    }
 
-            const data = await res.json();
-            if (data.error) {
-                const msg = friendlyError(data.error.message || data.error.code);
-                authError.innerText = msg;
+    // 2. Direct REST API Authentication (Bulletproof fallback)
+    try {
+        const endpoint = isSignUp 
+            ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
+            : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
+        
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, returnSecureToken: true })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+            const errCode = data.error.message || data.error.code;
+            const msg = friendlyError(errCode);
+            if (authError) authError.innerText = msg;
+            if (authSubmitBtn) {
                 authSubmitBtn.disabled = false;
                 authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
-            } else if (data.idToken) {
-                // REST API Auth successful! Update UI directly
-                loginView.style.display = 'none';
-                appView.style.display = 'block';
-                document.getElementById('user-email-display').innerText = data.email || email;
-                init();
             }
-        } catch (restErr) {
-            console.error("REST Auth error:", restErr);
-            const msg = friendlyError(err.code || err.message || restErr.message);
-            authError.innerText = msg;
+        } else if (data.idToken) {
+            // Save token
+            try {
+                localStorage.setItem('bagged_user_email', data.email || email);
+                localStorage.setItem('bagged_id_token', data.idToken);
+                localStorage.setItem('bagged_local_id', data.localId);
+            } catch (_) {}
+
+            // Transition UI
+            const loginView = document.getElementById('login-view');
+            const appView = document.getElementById('app-view');
+            if (loginView) loginView.style.display = 'none';
+            if (appView) appView.style.display = 'block';
+            
+            const emailDisp = document.getElementById('user-email-display');
+            if (emailDisp) emailDisp.innerText = data.email || email;
+
+            if (window.initApp) window.initApp();
+        }
+    } catch (restErr) {
+        console.error("REST Auth error:", restErr);
+        if (authError) authError.innerText = friendlyError(restErr.message);
+        if (authSubmitBtn) {
             authSubmitBtn.disabled = false;
             authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
         }
     }
+    return false;
 }
 
 window.handleAuthSubmit = handleAuthSubmit;
