@@ -390,7 +390,7 @@
         </div>
         <p class="login-subtitle">your personal shopping assistant</p>
 
-        <div class="login-form">
+        <form class="login-form" id="popup-login-form" action="#">
             <input type="email" id="auth-email" placeholder="email address" autocomplete="email">
             <div class="password-wrapper">
                 <input type="password" id="auth-password" placeholder="password" autocomplete="current-password">
@@ -402,8 +402,8 @@
                     <button type="button" class="toggle-password" id="toggle-auth-confirm" title="Show password">show</button>
                 </div>
             </div>
-            <button class="btn-primary" id="auth-submit-btn">sign in</button>
-        </div>
+            <button type="submit" class="btn-primary" id="auth-submit-btn">sign in</button>
+        </form>
 
         <div id="auth-error"></div>
 
