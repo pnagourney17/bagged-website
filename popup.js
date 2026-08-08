@@ -43,10 +43,36 @@ function friendlyError(code) {
         'auth/too-many-requests': 'too many attempts - please try again later',
         'TOO_MANY_ATTEMPTS_TRY_LATER': 'too many attempts - please try again later',
         'auth/network-request-failed': 'network error - check your connection',
+        'auth/invalid-email': 'please enter a valid email address',
+        'auth/user-not-found': 'no account found with this email',
+        'auth/wrong-password': 'incorrect password',
+        'auth/weak-password': 'password must be at least 6 characters',
+        'auth/too-many-requests': 'too many attempts - please try again later',
+        'auth/network-request-failed': 'network error - check your connection',
         'auth/user-disabled': 'this account has been disabled',
+        'auth/operation-not-allowed': 'email/password sign-in is not enabled - please enable it in Firebase Console',
+        'auth/invalid-credential': 'invalid email or password',
+        'auth/missing-password': 'please enter a password',
+        'auth/internal-error': 'an internal error occurred - please try again',
         'USER_DISABLED': 'this account has been disabled',
     };
     return map[code] || 'error: ' + (code || 'unknown') + ' - please try again';
+}
+
+function toProperCase(str) {
+    if (!str) return "";
+    return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+}
+
+async function getUserUid() {
+    if (auth && auth.currentUser) return auth.currentUser.uid;
+    const localId = localStorage.getItem('bagged_local_id');
+    if (localId) return localId;
+    const email = localStorage.getItem('bagged_user_email');
+    if (email) {
+        try { return btoa(email).replace(/=/g, ''); } catch (_) { return email.replace(/[^a-zA-Z0-9]/g, '_'); }
+    }
+    return null;
 }
 
 // Global Submit Handler
@@ -92,7 +118,7 @@ async function handleAuthSubmit(e) {
         authSubmitBtn.innerText = isSignUp ? 'creating...' : 'signing in...';
     }
 
-    // 1. Try Firebase Auth SDK first if available
+    // 1. Try Firebase Auth SDK first
     if (auth) {
         try {
             if (isSignUp) {
@@ -129,23 +155,13 @@ async function handleAuthSubmit(e) {
                 authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
             }
         } else if (data.idToken) {
-            // Save token
             try {
                 localStorage.setItem('bagged_user_email', data.email || email);
                 localStorage.setItem('bagged_id_token', data.idToken);
-                localStorage.setItem('bagged_local_id', data.localId);
+                localStorage.setItem('bagged_local_id', data.localId || btoa(email).replace(/=/g, ''));
             } catch (_) {}
 
-            // Transition UI
-            const loginView = document.getElementById('login-view');
-            const appView = document.getElementById('app-view');
-            if (loginView) loginView.style.display = 'none';
-            if (appView) appView.style.display = 'block';
-            
-            const emailDisp = document.getElementById('user-email-display');
-            if (emailDisp) emailDisp.innerText = data.email || email;
-
-            if (window.initApp) window.initApp();
+            checkAuthState();
         }
     } catch (restErr) {
         console.error("REST Auth error:", restErr);
@@ -160,51 +176,129 @@ async function handleAuthSubmit(e) {
 
 window.handleAuthSubmit = handleAuthSubmit;
 
-const popupLoginForm = document.getElementById('popup-login-form');
-if (popupLoginForm) {
-    popupLoginForm.addEventListener('submit', handleAuthSubmit);
-}
-if (authSubmitBtn) {
-    authSubmitBtn.addEventListener('click', handleAuthSubmit);
-}
+// ========== PRODUCT SCANNER & APP LOGIC ==========
+function fetchProductFromTab() {
+    if (typeof chrome === 'undefined' || !chrome.tabs) return;
 
-// Enter key navigation
-authEmail.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') authPassword.focus();
-});
-authPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        if (isSignUp) {
-            authConfirmPassword.focus();
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        let tab = tabs && tabs[0];
+        if (!tab) {
+            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs2) => {
+                let tab2 = tabs2 && tabs2[0];
+                if (!tab2) {
+                    chrome.tabs.query({ active: true }, (tabs3) => {
+                        if (tabs3 && tabs3[0]) queryTabProduct(tabs3[0]);
+                    });
+                } else {
+                    queryTabProduct(tab2);
+                }
+            });
         } else {
-            authSubmitBtn.click();
+            queryTabProduct(tab);
         }
-    }
-});
-authConfirmPassword.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') authSubmitBtn.click();
-});
-
-function friendlyError(code) {
-    console.log('Auth error code:', code);
-    const map = {
-        'auth/email-already-in-use': 'an account with this email already exists',
-        'auth/invalid-email': 'please enter a valid email address',
-        'auth/user-not-found': 'no account found with this email',
-        'auth/wrong-password': 'incorrect password',
-        'auth/weak-password': 'password must be at least 6 characters',
-        'auth/too-many-requests': 'too many attempts - please try again later',
-        'auth/network-request-failed': 'network error - check your connection',
-        'auth/user-disabled': 'this account has been disabled',
-        'auth/operation-not-allowed': 'email/password sign-in is not enabled - please enable it in Firebase Console',
-        'auth/invalid-credential': 'invalid email or password',
-        'auth/missing-password': 'please enter a password',
-        'auth/internal-error': 'an internal error occurred - please try again',
-    };
-    return map[code] || 'error: ' + (code || 'unknown') + ' - please try again';
+    });
 }
 
-// ========== AUTH STATE ==========
+function queryTabProduct(tab) {
+    if (!tab || !tab.id) return;
+
+    // Inject content.js to guarantee message receiver is ready
+    if (chrome.scripting) {
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+        }, () => sendProductMessage(tab.id));
+    } else {
+        sendProductMessage(tab.id);
+    }
+}
+
+function sendProductMessage(tabId) {
+    chrome.tabs.sendMessage(tabId, { action: "getProduct" }, (response) => {
+        if (chrome.runtime.lastError || !response) {
+            console.log("Product query response notice:", chrome.runtime.lastError);
+            return;
+        }
+        if (response && response.name) {
+            const imgEl = document.getElementById('product-img');
+            if (imgEl) {
+                imgEl.src = response.image || '';
+                imgEl.style.display = response.image ? "block" : "none";
+            }
+            const brandEl = document.getElementById('product-brand');
+            if (brandEl) brandEl.innerText = (response.brand || "").toLowerCase();
+            const nameEl = document.getElementById('product-name');
+            if (nameEl) nameEl.innerText = toProperCase(response.name);
+            const priceEl = document.getElementById('product-price');
+            if (priceEl) priceEl.innerText = response.price || '';
+            window.currentProduct = response;
+        }
+    });
+}
+
+async function loadBagsFromCloud() {
+    const bagSelect = document.getElementById('bag-selector');
+    if (bagSelect) {
+        bagSelect.innerHTML = '<option value="General">My Main Bag</option>';
+    }
+
+    const uid = await getUserUid();
+    if (!uid) return;
+    
+    if (db) {
+        try {
+            const snapshot = await db.collection('users').doc(uid).collection('wishlists').get();
+            snapshot.forEach(doc => {
+                if (doc.id !== "General" && bagSelect) {
+                    let opt = document.createElement('option');
+                    opt.value = doc.id;
+                    opt.innerText = toProperCase(doc.id);
+                    bagSelect.appendChild(opt);
+                }
+            });
+        } catch (e) {
+            console.warn("Firestore SDK wishlist load notice, trying REST API:", e);
+            await loadBagsFromREST(uid);
+        }
+    } else {
+        await loadBagsFromREST(uid);
+    }
+
+    const lastBag = localStorage.getItem('lastUsedBag_' + uid);
+    if (lastBag && bagSelect) {
+        const exists = Array.from(bagSelect.options).some(opt => opt.value === lastBag);
+        if (exists) bagSelect.value = lastBag;
+    }
+}
+
+async function loadBagsFromREST(uid) {
+    const bagSelect = document.getElementById('bag-selector');
+    try {
+        const res = await fetch(`https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`);
+        const data = await res.json();
+        if (data.documents) {
+            data.documents.forEach(doc => {
+                const docId = doc.name.split('/').pop();
+                if (docId && docId !== "General" && bagSelect) {
+                    let opt = document.createElement('option');
+                    opt.value = docId;
+                    opt.innerText = toProperCase(docId);
+                    bagSelect.appendChild(opt);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("REST wishlist load notice:", e);
+    }
+}
+
+function initApp() {
+    fetchProductFromTab();
+    loadBagsFromCloud();
+}
+
+window.initApp = initApp;
+
 // ========== AUTH STATE & AUTO-LOGIN ==========
 function checkAuthState() {
     const user = auth ? auth.currentUser : null;
@@ -217,7 +311,7 @@ function checkAuthState() {
         if (appView) appView.style.display = 'block';
         const emailDisp = document.getElementById('user-email-display');
         if (emailDisp) emailDisp.innerText = user ? user.email : storedEmail;
-        init();
+        initApp();
     } else {
         if (loginView) loginView.style.display = 'flex';
         if (appView) appView.style.display = 'none';
@@ -226,151 +320,55 @@ function checkAuthState() {
 
 if (auth) {
     auth.onAuthStateChanged(() => checkAuthState());
-} else {
-    document.addEventListener('DOMContentLoaded', checkAuthState);
 }
 
-const signOutBtn = document.getElementById('sign-out-btn');
-if (signOutBtn) {
-    signOutBtn.addEventListener('click', () => {
-        if (auth) auth.signOut();
-        localStorage.removeItem('bagged_user_email');
-        localStorage.removeItem('bagged_id_token');
-        localStorage.removeItem('bagged_local_id');
-        checkAuthState();
-    });
-}
-
-// ========== APP LOGIC ==========
 document.addEventListener('DOMContentLoaded', function () {
+    checkAuthState();
+
+    const authToggleLink = document.getElementById('auth-toggle-link');
+    const authToggleText = document.getElementById('auth-toggle-text');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const authConfirmPassword = document.getElementById('auth-confirm-password');
+    const confirmWrapper = document.getElementById('confirm-password-wrapper');
+    const authError = document.getElementById('auth-error');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+
+    if (authToggleLink) {
+        authToggleLink.addEventListener('click', () => {
+            isSignUp = !isSignUp;
+            if (authError) authError.innerText = '';
+            if (authConfirmPassword) authConfirmPassword.value = '';
+            if (isSignUp) {
+                if (authSubmitBtn) authSubmitBtn.innerText = 'create account';
+                if (authToggleText) authToggleText.innerText = 'already have an account? ';
+                if (authToggleLink) authToggleLink.innerText = 'sign in';
+                if (authPassword) authPassword.setAttribute('autocomplete', 'new-password');
+                if (confirmWrapper) confirmWrapper.classList.add('show');
+            } else {
+                if (authSubmitBtn) authSubmitBtn.innerText = 'sign in';
+                if (authToggleText) authToggleText.innerText = "don't have an account? ";
+                if (authToggleLink) authToggleLink.innerText = 'create one';
+                if (authPassword) authPassword.setAttribute('autocomplete', 'current-password');
+                if (confirmWrapper) confirmWrapper.classList.remove('show');
+            }
+        });
+    }
+
+    const signOutBtn = document.getElementById('sign-out-btn');
+    if (signOutBtn) {
+        signOutBtn.addEventListener('click', () => {
+            if (auth) auth.signOut();
+            localStorage.removeItem('bagged_user_email');
+            localStorage.removeItem('bagged_id_token');
+            localStorage.removeItem('bagged_local_id');
+            checkAuthState();
+        });
+    }
+
     const saveBtn = document.getElementById('save-btn');
     const bagSelect = document.getElementById('bag-selector');
     const addBagBtn = document.getElementById('add-bag-btn');
-
-    function toProperCase(str) {
-        if (!str) return "";
-        return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-    }
-
-    async function getUserUid() {
-        if (auth && auth.currentUser) return auth.currentUser.uid;
-        const localId = localStorage.getItem('bagged_local_id');
-        if (localId) return localId;
-        const email = localStorage.getItem('bagged_user_email');
-        if (email) return btoa(email).replace(/=/g, '');
-        return null;
-    }
-
-    async function getActiveTab() {
-        try {
-            let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-            if (tabs && tabs.length > 0) return tabs[0];
-            tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-            if (tabs && tabs.length > 0) return tabs[0];
-            tabs = await chrome.tabs.query({ active: true });
-            if (tabs && tabs.length > 0) return tabs[0];
-        } catch (e) {
-            console.warn("Active tab query notice:", e);
-        }
-        return null;
-    }
-
-    async function initApp() {
-        const uid = await getUserUid();
-        if (!uid) return;
-
-        const tab = await getActiveTab();
-        if (tab && tab.id) {
-            // Inject content script first to ensure it's available
-            try {
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    files: ['content.js']
-                });
-            } catch (e) {
-                console.log("Script injection notice:", e.message);
-            }
-
-            setTimeout(() => {
-                chrome.tabs.sendMessage(tab.id, { action: "getProduct" }, (response) => {
-                    if (chrome.runtime.lastError) {
-                        const nameEl = document.getElementById('product-name');
-                        if (nameEl) nameEl.innerText = "Could not read this page";
-                        return;
-                    }
-                    if (response) {
-                        const imgEl = document.getElementById('product-img');
-                        if (imgEl) {
-                            imgEl.src = response.image;
-                            imgEl.style.display = response.image ? "block" : "none";
-                        }
-                        const brandEl = document.getElementById('product-brand');
-                        if (brandEl) brandEl.innerText = (response.brand || "").toLowerCase();
-                        const nameEl = document.getElementById('product-name');
-                        if (nameEl) nameEl.innerText = toProperCase(response.name);
-                        const priceEl = document.getElementById('product-price');
-                        if (priceEl) priceEl.innerText = response.price;
-                        window.currentProduct = response;
-                    }
-                });
-            }, 250);
-        }
-
-        loadBagsFromCloud();
-    }
-
-    async function loadBagsFromCloud() {
-        const uid = await getUserUid();
-        if (!uid) return;
-        
-        if (bagSelect) bagSelect.innerHTML = '<option value="General">My Main Bag</option>';
-        
-        if (db) {
-            try {
-                const snapshot = await db.collection('users').doc(uid).collection('wishlists').get();
-                snapshot.forEach(doc => {
-                    if (doc.id !== "General" && bagSelect) {
-                        let opt = document.createElement('option');
-                        opt.value = doc.id;
-                        opt.innerText = toProperCase(doc.id);
-                        bagSelect.appendChild(opt);
-                    }
-                });
-            } catch (e) {
-                console.warn("Firestore SDK wishlist load notice, trying REST API:", e);
-                await loadBagsFromREST(uid);
-            }
-        } else {
-            await loadBagsFromREST(uid);
-        }
-
-        // Default to the last used bag
-        const lastBag = localStorage.getItem('lastUsedBag_' + uid);
-        if (lastBag && bagSelect) {
-            const exists = Array.from(bagSelect.options).some(opt => opt.value === lastBag);
-            if (exists) bagSelect.value = lastBag;
-        }
-    }
-
-    async function loadBagsFromREST(uid) {
-        try {
-            const res = await fetch(`https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`);
-            const data = await res.json();
-            if (data.documents) {
-                data.documents.forEach(doc => {
-                    const docId = doc.name.split('/').pop();
-                    if (docId && docId !== "General" && bagSelect) {
-                        let opt = document.createElement('option');
-                        opt.value = docId;
-                        opt.innerText = toProperCase(docId);
-                        bagSelect.appendChild(opt);
-                    }
-                });
-            }
-        } catch (e) {
-            console.warn("REST wishlist load notice:", e);
-        }
-    }
 
     if (addBagBtn) {
         addBagBtn.addEventListener('click', async () => {
@@ -424,9 +422,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (viewBagsBtn) {
         viewBagsBtn.onclick = () => chrome.tabs.create({ url: 'dashboard.html' });
     }
-
-    window.initApp = initApp;
-    initApp();
 });
 
 function init() {

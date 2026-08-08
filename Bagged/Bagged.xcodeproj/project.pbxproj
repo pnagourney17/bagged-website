@@ -7,43 +7,43 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3AF6C3B03027EE770002018E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF6C3AF3027EE770002018E /* AppDelegate.swift */; };
-		3AF6C3B43027EE770002018E /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3B23027EE770002018E /* Main.html */; };
-		3AF6C3B63027EE770002018E /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3B53027EE770002018E /* Icon.png */; };
-		3AF6C3B83027EE770002018E /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3B73027EE770002018E /* Style.css */; };
-		3AF6C3BA3027EE770002018E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF6C3B93027EE770002018E /* SceneDelegate.swift */; };
-		3AF6C3BC3027EE770002018E /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF6C3BB3027EE770002018E /* ViewController.swift */; };
-		3AF6C3BF3027EE770002018E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3BD3027EE770002018E /* LaunchScreen.storyboard */; };
-		3AF6C3C23027EE770002018E /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3C03027EE770002018E /* Main.storyboard */; };
-		3AF6C3CA3027EE770002018E /* Bagged Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3AF6C3C93027EE770002018E /* Bagged Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		3AF6C3CF3027EE770002018E /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AF6C3CE3027EE770002018E /* SafariWebExtensionHandler.swift */; };
-		3AF6C3D13027EE780002018E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3C33027EE770002018E /* Assets.xcassets */; };
-		3AF6C3E23027EE780002018E /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3DC3027EE780002018E /* Icon.png */; };
-		3AF6C3E33027EE780002018E /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3DD3027EE780002018E /* popup.js */; };
-		3AF6C3E43027EE780002018E /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3DE3027EE780002018E /* background.js */; };
-		3AF6C3E53027EE780002018E /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3DF3027EE780002018E /* popup.html */; };
-		3AF6C3E63027EE780002018E /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3E03027EE780002018E /* manifest.json */; };
-		3AF6C3E73027EE780002018E /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AF6C3E13027EE780002018E /* content.js */; };
+		3AA680113027EF8600FD8838 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA680103027EF8600FD8838 /* AppDelegate.swift */; };
+		3AA680153027EF8600FD8838 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680133027EF8600FD8838 /* Main.html */; };
+		3AA680173027EF8600FD8838 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680163027EF8600FD8838 /* Icon.png */; };
+		3AA680193027EF8600FD8838 /* Style.css in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680183027EF8600FD8838 /* Style.css */; };
+		3AA6801B3027EF8600FD8838 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA6801A3027EF8600FD8838 /* SceneDelegate.swift */; };
+		3AA6801D3027EF8600FD8838 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA6801C3027EF8600FD8838 /* ViewController.swift */; };
+		3AA680203027EF8600FD8838 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6801E3027EF8600FD8838 /* LaunchScreen.storyboard */; };
+		3AA680233027EF8600FD8838 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680213027EF8600FD8838 /* Main.storyboard */; };
+		3AA6802B3027EF8600FD8838 /* Bagged Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3AA6802A3027EF8600FD8838 /* Bagged Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		3AA680303027EF8600FD8838 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA6802F3027EF8600FD8838 /* SafariWebExtensionHandler.swift */; };
+		3AA680323027EF8600FD8838 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680243027EF8600FD8838 /* Assets.xcassets */; };
+		3AA680433027EF8600FD8838 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803D3027EF8600FD8838 /* Icon.png */; };
+		3AA680443027EF8600FD8838 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803E3027EF8600FD8838 /* popup.js */; };
+		3AA680453027EF8600FD8838 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803F3027EF8600FD8838 /* background.js */; };
+		3AA680463027EF8600FD8838 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680403027EF8600FD8838 /* popup.html */; };
+		3AA680473027EF8600FD8838 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680413027EF8600FD8838 /* manifest.json */; };
+		3AA680483027EF8600FD8838 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680423027EF8600FD8838 /* content.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3AF6C3CB3027EE770002018E /* PBXContainerItemProxy */ = {
+		3AA6802C3027EF8600FD8838 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 3AF6C3A43027EE770002018E /* Project object */;
+			containerPortal = 3AA680053027EF8600FD8838 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3AF6C3C83027EE770002018E;
+			remoteGlobalIDString = 3AA680293027EF8600FD8838;
 			remoteInfo = "Bagged Extension";
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		3AF6C3D73027EE780002018E /* Embed Foundation Extensions */ = {
+		3AA680383027EF8600FD8838 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				3AF6C3CA3027EE770002018E /* Bagged Extension.appex in Embed Foundation Extensions */,
+				3AA6802B3027EF8600FD8838 /* Bagged Extension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -51,37 +51,37 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		3AF6C3AC3027EE770002018E /* Bagged.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bagged.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		3AF6C3AF3027EE770002018E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		3AF6C3B33027EE770002018E /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
-		3AF6C3B53027EE770002018E /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
-		3AF6C3B73027EE770002018E /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
-		3AF6C3B93027EE770002018E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		3AF6C3BB3027EE770002018E /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		3AF6C3BE3027EE770002018E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		3AF6C3C13027EE770002018E /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
-		3AF6C3C33027EE770002018E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		3AF6C3C43027EE770002018E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		3AF6C3C93027EE770002018E /* Bagged Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Bagged Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
-		3AF6C3CE3027EE770002018E /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
-		3AF6C3D03027EE780002018E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		3AF6C3DC3027EE780002018E /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = ../../extension/Icon.png; sourceTree = "<group>"; };
-		3AF6C3DD3027EE780002018E /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = ../../extension/popup.js; sourceTree = "<group>"; };
-		3AF6C3DE3027EE780002018E /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../extension/background.js; sourceTree = "<group>"; };
-		3AF6C3DF3027EE780002018E /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = ../../extension/popup.html; sourceTree = "<group>"; };
-		3AF6C3E03027EE780002018E /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../extension/manifest.json; sourceTree = "<group>"; };
-		3AF6C3E13027EE780002018E /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../extension/content.js; sourceTree = "<group>"; };
+		3AA6800D3027EF8600FD8838 /* Bagged.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bagged.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3AA680103027EF8600FD8838 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		3AA680143027EF8600FD8838 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
+		3AA680163027EF8600FD8838 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Icon.png; sourceTree = "<group>"; };
+		3AA680183027EF8600FD8838 /* Style.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = Style.css; sourceTree = "<group>"; };
+		3AA6801A3027EF8600FD8838 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		3AA6801C3027EF8600FD8838 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		3AA6801F3027EF8600FD8838 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3AA680223027EF8600FD8838 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		3AA680243027EF8600FD8838 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3AA680253027EF8600FD8838 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3AA6802A3027EF8600FD8838 /* Bagged Extension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Bagged Extension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3AA6802F3027EF8600FD8838 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
+		3AA680313027EF8600FD8838 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3AA6803D3027EF8600FD8838 /* Icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = Icon.png; path = ../../extension/Icon.png; sourceTree = "<group>"; };
+		3AA6803E3027EF8600FD8838 /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = popup.js; path = ../../extension/popup.js; sourceTree = "<group>"; };
+		3AA6803F3027EF8600FD8838 /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = background.js; path = ../../extension/background.js; sourceTree = "<group>"; };
+		3AA680403027EF8600FD8838 /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = popup.html; path = ../../extension/popup.html; sourceTree = "<group>"; };
+		3AA680413027EF8600FD8838 /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = manifest.json; path = ../../extension/manifest.json; sourceTree = "<group>"; };
+		3AA680423027EF8600FD8838 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; name = content.js; path = ../../extension/content.js; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3AF6C3A93027EE770002018E /* Frameworks */ = {
+		3AA6800A3027EF8600FD8838 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3AF6C3C63027EE770002018E /* Frameworks */ = {
+		3AA680273027EF8600FD8838 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -91,68 +91,68 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		3AF6C3A33027EE770002018E = {
+		3AA680043027EF8600FD8838 = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3AE3027EE770002018E /* Bagged */,
-				3AF6C3CD3027EE770002018E /* Bagged Extension */,
-				3AF6C3AD3027EE770002018E /* Products */,
+				3AA6800F3027EF8600FD8838 /* Bagged */,
+				3AA6802E3027EF8600FD8838 /* Bagged Extension */,
+				3AA6800E3027EF8600FD8838 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		3AF6C3AD3027EE770002018E /* Products */ = {
+		3AA6800E3027EF8600FD8838 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3AC3027EE770002018E /* Bagged.app */,
-				3AF6C3C93027EE770002018E /* Bagged Extension.appex */,
+				3AA6800D3027EF8600FD8838 /* Bagged.app */,
+				3AA6802A3027EF8600FD8838 /* Bagged Extension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		3AF6C3AE3027EE770002018E /* Bagged */ = {
+		3AA6800F3027EF8600FD8838 /* Bagged */ = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3AF3027EE770002018E /* AppDelegate.swift */,
-				3AF6C3B93027EE770002018E /* SceneDelegate.swift */,
-				3AF6C3BB3027EE770002018E /* ViewController.swift */,
-				3AF6C3BD3027EE770002018E /* LaunchScreen.storyboard */,
-				3AF6C3C03027EE770002018E /* Main.storyboard */,
-				3AF6C3C33027EE770002018E /* Assets.xcassets */,
-				3AF6C3C43027EE770002018E /* Info.plist */,
-				3AF6C3B13027EE770002018E /* Resources */,
+				3AA680103027EF8600FD8838 /* AppDelegate.swift */,
+				3AA6801A3027EF8600FD8838 /* SceneDelegate.swift */,
+				3AA6801C3027EF8600FD8838 /* ViewController.swift */,
+				3AA6801E3027EF8600FD8838 /* LaunchScreen.storyboard */,
+				3AA680213027EF8600FD8838 /* Main.storyboard */,
+				3AA680243027EF8600FD8838 /* Assets.xcassets */,
+				3AA680253027EF8600FD8838 /* Info.plist */,
+				3AA680123027EF8600FD8838 /* Resources */,
 			);
 			path = Bagged;
 			sourceTree = "<group>";
 		};
-		3AF6C3B13027EE770002018E /* Resources */ = {
+		3AA680123027EF8600FD8838 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3B23027EE770002018E /* Main.html */,
-				3AF6C3B53027EE770002018E /* Icon.png */,
-				3AF6C3B73027EE770002018E /* Style.css */,
+				3AA680133027EF8600FD8838 /* Main.html */,
+				3AA680163027EF8600FD8838 /* Icon.png */,
+				3AA680183027EF8600FD8838 /* Style.css */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		3AF6C3CD3027EE770002018E /* Bagged Extension */ = {
+		3AA6802E3027EF8600FD8838 /* Bagged Extension */ = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3DB3027EE780002018E /* Resources */,
-				3AF6C3CE3027EE770002018E /* SafariWebExtensionHandler.swift */,
-				3AF6C3D03027EE780002018E /* Info.plist */,
+				3AA6803C3027EF8600FD8838 /* Resources */,
+				3AA6802F3027EF8600FD8838 /* SafariWebExtensionHandler.swift */,
+				3AA680313027EF8600FD8838 /* Info.plist */,
 			);
 			path = "Bagged Extension";
 			sourceTree = "<group>";
 		};
-		3AF6C3DB3027EE780002018E /* Resources */ = {
+		3AA6803C3027EF8600FD8838 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				3AF6C3DC3027EE780002018E /* Icon.png */,
-				3AF6C3DD3027EE780002018E /* popup.js */,
-				3AF6C3DE3027EE780002018E /* background.js */,
-				3AF6C3DF3027EE780002018E /* popup.html */,
-				3AF6C3E03027EE780002018E /* manifest.json */,
-				3AF6C3E13027EE780002018E /* content.js */,
+				3AA6803D3027EF8600FD8838 /* Icon.png */,
+				3AA6803E3027EF8600FD8838 /* popup.js */,
+				3AA6803F3027EF8600FD8838 /* background.js */,
+				3AA680403027EF8600FD8838 /* popup.html */,
+				3AA680413027EF8600FD8838 /* manifest.json */,
+				3AA680423027EF8600FD8838 /* content.js */,
 			);
 			name = Resources;
 			path = "Bagged Extension";
@@ -161,34 +161,34 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3AF6C3AB3027EE770002018E /* Bagged */ = {
+		3AA6800C3027EF8600FD8838 /* Bagged */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3AF6C3D83027EE780002018E /* Build configuration list for PBXNativeTarget "Bagged" */;
+			buildConfigurationList = 3AA680393027EF8600FD8838 /* Build configuration list for PBXNativeTarget "Bagged" */;
 			buildPhases = (
-				3AF6C3A83027EE770002018E /* Sources */,
-				3AF6C3A93027EE770002018E /* Frameworks */,
-				3AF6C3AA3027EE770002018E /* Resources */,
-				3AF6C3D73027EE780002018E /* Embed Foundation Extensions */,
+				3AA680093027EF8600FD8838 /* Sources */,
+				3AA6800A3027EF8600FD8838 /* Frameworks */,
+				3AA6800B3027EF8600FD8838 /* Resources */,
+				3AA680383027EF8600FD8838 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				3AF6C3CC3027EE770002018E /* PBXTargetDependency */,
+				3AA6802D3027EF8600FD8838 /* PBXTargetDependency */,
 			);
 			name = Bagged;
 			packageProductDependencies = (
 			);
 			productName = Bagged;
-			productReference = 3AF6C3AC3027EE770002018E /* Bagged.app */;
+			productReference = 3AA6800D3027EF8600FD8838 /* Bagged.app */;
 			productType = "com.apple.product-type.application";
 		};
-		3AF6C3C83027EE770002018E /* Bagged Extension */ = {
+		3AA680293027EF8600FD8838 /* Bagged Extension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3AF6C3D43027EE780002018E /* Build configuration list for PBXNativeTarget "Bagged Extension" */;
+			buildConfigurationList = 3AA680353027EF8600FD8838 /* Build configuration list for PBXNativeTarget "Bagged Extension" */;
 			buildPhases = (
-				3AF6C3C53027EE770002018E /* Sources */,
-				3AF6C3C63027EE770002018E /* Frameworks */,
-				3AF6C3C73027EE770002018E /* Resources */,
+				3AA680263027EF8600FD8838 /* Sources */,
+				3AA680273027EF8600FD8838 /* Frameworks */,
+				3AA680283027EF8600FD8838 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -198,126 +198,126 @@
 			packageProductDependencies = (
 			);
 			productName = "Bagged Extension";
-			productReference = 3AF6C3C93027EE770002018E /* Bagged Extension.appex */;
+			productReference = 3AA6802A3027EF8600FD8838 /* Bagged Extension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		3AF6C3A43027EE770002018E /* Project object */ = {
+		3AA680053027EF8600FD8838 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2660;
 				TargetAttributes = {
-					3AF6C3AB3027EE770002018E = {
+					3AA6800C3027EF8600FD8838 = {
 						CreatedOnToolsVersion = 26.6;
 					};
-					3AF6C3C83027EE770002018E = {
+					3AA680293027EF8600FD8838 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
 			};
-			buildConfigurationList = 3AF6C3A73027EE770002018E /* Build configuration list for PBXProject "Bagged" */;
+			buildConfigurationList = 3AA680083027EF8600FD8838 /* Build configuration list for PBXProject "Bagged" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 3AF6C3A33027EE770002018E;
+			mainGroup = 3AA680043027EF8600FD8838;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 3AF6C3AD3027EE770002018E /* Products */;
+			productRefGroup = 3AA6800E3027EF8600FD8838 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3AF6C3AB3027EE770002018E /* Bagged */,
-				3AF6C3C83027EE770002018E /* Bagged Extension */,
+				3AA6800C3027EF8600FD8838 /* Bagged */,
+				3AA680293027EF8600FD8838 /* Bagged Extension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		3AF6C3AA3027EE770002018E /* Resources */ = {
+		3AA6800B3027EF8600FD8838 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AF6C3B63027EE770002018E /* Icon.png in Resources */,
-				3AF6C3C23027EE770002018E /* Main.storyboard in Resources */,
-				3AF6C3BF3027EE770002018E /* LaunchScreen.storyboard in Resources */,
-				3AF6C3B43027EE770002018E /* Main.html in Resources */,
-				3AF6C3D13027EE780002018E /* Assets.xcassets in Resources */,
-				3AF6C3B83027EE770002018E /* Style.css in Resources */,
+				3AA680173027EF8600FD8838 /* Icon.png in Resources */,
+				3AA680233027EF8600FD8838 /* Main.storyboard in Resources */,
+				3AA680203027EF8600FD8838 /* LaunchScreen.storyboard in Resources */,
+				3AA680153027EF8600FD8838 /* Main.html in Resources */,
+				3AA680323027EF8600FD8838 /* Assets.xcassets in Resources */,
+				3AA680193027EF8600FD8838 /* Style.css in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3AF6C3C73027EE770002018E /* Resources */ = {
+		3AA680283027EF8600FD8838 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AF6C3E73027EE780002018E /* content.js in Resources */,
-				3AF6C3E23027EE780002018E /* Icon.png in Resources */,
-				3AF6C3E53027EE780002018E /* popup.html in Resources */,
-				3AF6C3E63027EE780002018E /* manifest.json in Resources */,
-				3AF6C3E43027EE780002018E /* background.js in Resources */,
-				3AF6C3E33027EE780002018E /* popup.js in Resources */,
+				3AA680483027EF8600FD8838 /* content.js in Resources */,
+				3AA680433027EF8600FD8838 /* Icon.png in Resources */,
+				3AA680463027EF8600FD8838 /* popup.html in Resources */,
+				3AA680473027EF8600FD8838 /* manifest.json in Resources */,
+				3AA680453027EF8600FD8838 /* background.js in Resources */,
+				3AA680443027EF8600FD8838 /* popup.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		3AF6C3A83027EE770002018E /* Sources */ = {
+		3AA680093027EF8600FD8838 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AF6C3BC3027EE770002018E /* ViewController.swift in Sources */,
-				3AF6C3B03027EE770002018E /* AppDelegate.swift in Sources */,
-				3AF6C3BA3027EE770002018E /* SceneDelegate.swift in Sources */,
+				3AA6801D3027EF8600FD8838 /* ViewController.swift in Sources */,
+				3AA680113027EF8600FD8838 /* AppDelegate.swift in Sources */,
+				3AA6801B3027EF8600FD8838 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3AF6C3C53027EE770002018E /* Sources */ = {
+		3AA680263027EF8600FD8838 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AF6C3CF3027EE770002018E /* SafariWebExtensionHandler.swift in Sources */,
+				3AA680303027EF8600FD8838 /* SafariWebExtensionHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3AF6C3CC3027EE770002018E /* PBXTargetDependency */ = {
+		3AA6802D3027EF8600FD8838 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3AF6C3C83027EE770002018E /* Bagged Extension */;
-			targetProxy = 3AF6C3CB3027EE770002018E /* PBXContainerItemProxy */;
+			target = 3AA680293027EF8600FD8838 /* Bagged Extension */;
+			targetProxy = 3AA6802C3027EF8600FD8838 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		3AF6C3B23027EE770002018E /* Main.html */ = {
+		3AA680133027EF8600FD8838 /* Main.html */ = {
 			isa = PBXVariantGroup;
 			children = (
-				3AF6C3B33027EE770002018E /* Base */,
+				3AA680143027EF8600FD8838 /* Base */,
 			);
 			name = Main.html;
 			sourceTree = "<group>";
 		};
-		3AF6C3BD3027EE770002018E /* LaunchScreen.storyboard */ = {
+		3AA6801E3027EF8600FD8838 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				3AF6C3BE3027EE770002018E /* Base */,
+				3AA6801F3027EF8600FD8838 /* Base */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
 		};
-		3AF6C3C03027EE770002018E /* Main.storyboard */ = {
+		3AA680213027EF8600FD8838 /* Main.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
-				3AF6C3C13027EE770002018E /* Base */,
+				3AA680223027EF8600FD8838 /* Base */,
 			);
 			name = Main.storyboard;
 			sourceTree = "<group>";
@@ -325,7 +325,7 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		3AF6C3D23027EE780002018E /* Debug */ = {
+		3AA680333027EF8600FD8838 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -388,7 +388,7 @@
 			};
 			name = Debug;
 		};
-		3AF6C3D33027EE780002018E /* Release */ = {
+		3AA680343027EF8600FD8838 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -444,11 +444,12 @@
 			};
 			name = Release;
 		};
-		3AF6C3D53027EE780002018E /* Debug */ = {
+		3AA680363027EF8600FD8838 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5L56DL5RW4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Bagged Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Bagged Extension";
@@ -464,7 +465,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bagged.app.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bagged.Bagged.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -476,11 +477,12 @@
 			};
 			name = Debug;
 		};
-		3AF6C3D63027EE780002018E /* Release */ = {
+		3AA680373027EF8600FD8838 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5L56DL5RW4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Bagged Extension/Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Bagged Extension";
@@ -496,7 +498,7 @@
 					"-framework",
 					SafariServices,
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.bagged.app.Extension;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bagged.Bagged.Extension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -508,13 +510,14 @@
 			};
 			name = Release;
 		};
-		3AF6C3D93027EE780002018E /* Debug */ = {
+		3AA6803A3027EF8600FD8838 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5L56DL5RW4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bagged/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Bagged;
@@ -547,13 +550,14 @@
 			};
 			name = Debug;
 		};
-		3AF6C3DA3027EE780002018E /* Release */ = {
+		3AA6803B3027EF8600FD8838 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5L56DL5RW4;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bagged/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Bagged;
@@ -589,34 +593,34 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3AF6C3A73027EE770002018E /* Build configuration list for PBXProject "Bagged" */ = {
+		3AA680083027EF8600FD8838 /* Build configuration list for PBXProject "Bagged" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3AF6C3D23027EE780002018E /* Debug */,
-				3AF6C3D33027EE780002018E /* Release */,
+				3AA680333027EF8600FD8838 /* Debug */,
+				3AA680343027EF8600FD8838 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3AF6C3D43027EE780002018E /* Build configuration list for PBXNativeTarget "Bagged Extension" */ = {
+		3AA680353027EF8600FD8838 /* Build configuration list for PBXNativeTarget "Bagged Extension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3AF6C3D53027EE780002018E /* Debug */,
-				3AF6C3D63027EE780002018E /* Release */,
+				3AA680363027EF8600FD8838 /* Debug */,
+				3AA680373027EF8600FD8838 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3AF6C3D83027EE780002018E /* Build configuration list for PBXNativeTarget "Bagged" */ = {
+		3AA680393027EF8600FD8838 /* Build configuration list for PBXNativeTarget "Bagged" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				3AF6C3D93027EE780002018E /* Debug */,
-				3AF6C3DA3027EE780002018E /* Release */,
+				3AA6803A3027EF8600FD8838 /* Debug */,
+				3AA6803B3027EF8600FD8838 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 3AF6C3A43027EE770002018E /* Project object */;
+	rootObject = 3AA680053027EF8600FD8838 /* Project object */;
 }
