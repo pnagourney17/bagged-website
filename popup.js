@@ -136,11 +136,15 @@ async function handleAuthSubmit(e) {
     }
 }
 
+window.handleAuthSubmit = handleAuthSubmit;
+
 const popupLoginForm = document.getElementById('popup-login-form');
 if (popupLoginForm) {
     popupLoginForm.addEventListener('submit', handleAuthSubmit);
 }
-authSubmitBtn.addEventListener('click', handleAuthSubmit);
+if (authSubmitBtn) {
+    authSubmitBtn.addEventListener('click', handleAuthSubmit);
+}
 
 // Enter key navigation
 authEmail.addEventListener('keydown', (e) => {
