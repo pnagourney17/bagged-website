@@ -9,9 +9,10 @@ const firebaseConfig = {
 
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
-    console.warn("Auth persistence notice:", err);
-});
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION))
+    .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE))
+    .catch(err => console.warn("Auth persistence notice:", err));
 const db = firebase.firestore();
 
 // ========== AUTH UI ==========
@@ -98,11 +99,40 @@ async function handleAuthSubmit(e) {
             await auth.signInWithEmailAndPassword(email, password);
         }
     } catch (err) {
-        console.error("Popup Auth error:", err);
-        const msg = friendlyError(err.code || err.message);
-        authError.innerText = msg;
-        authSubmitBtn.disabled = false;
-        authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
+        console.error("Popup Auth SDK notice, trying direct REST fallback:", err);
+        
+        // Direct REST API Fallback for iOS Safari Extension Popups
+        try {
+            const endpoint = isSignUp 
+                ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
+                : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
+            
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, returnSecureToken: true })
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                const msg = friendlyError(data.error.message || data.error.code);
+                authError.innerText = msg;
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
+            } else if (data.idToken) {
+                // REST API Auth successful! Update UI directly
+                loginView.style.display = 'none';
+                appView.style.display = 'block';
+                document.getElementById('user-email-display').innerText = data.email || email;
+                init();
+            }
+        } catch (restErr) {
+            console.error("REST Auth error:", restErr);
+            const msg = friendlyError(err.code || err.message || restErr.message);
+            authError.innerText = msg;
+            authSubmitBtn.disabled = false;
+            authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
+        }
     }
 }
 
