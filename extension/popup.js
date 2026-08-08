@@ -205,135 +205,228 @@ function friendlyError(code) {
 }
 
 // ========== AUTH STATE ==========
-auth.onAuthStateChanged((user) => {
-    if (user) {
-        loginView.style.display = 'none';
-        appView.style.display = 'block';
-        document.getElementById('user-email-display').innerText = user.email;
+// ========== AUTH STATE & AUTO-LOGIN ==========
+function checkAuthState() {
+    const user = auth ? auth.currentUser : null;
+    const storedEmail = localStorage.getItem('bagged_user_email');
+    const loginView = document.getElementById('login-view');
+    const appView = document.getElementById('app-view');
+
+    if (user || storedEmail) {
+        if (loginView) loginView.style.display = 'none';
+        if (appView) appView.style.display = 'block';
+        const emailDisp = document.getElementById('user-email-display');
+        if (emailDisp) emailDisp.innerText = user ? user.email : storedEmail;
         init();
     } else {
-        loginView.style.display = 'flex';
-        appView.style.display = 'none';
+        if (loginView) loginView.style.display = 'flex';
+        if (appView) appView.style.display = 'none';
     }
-});
+}
 
-document.getElementById('sign-out-btn').addEventListener('click', () => {
-    auth.signOut();
-});
+if (auth) {
+    auth.onAuthStateChanged(() => checkAuthState());
+} else {
+    document.addEventListener('DOMContentLoaded', checkAuthState);
+}
+
+const signOutBtn = document.getElementById('sign-out-btn');
+if (signOutBtn) {
+    signOutBtn.addEventListener('click', () => {
+        if (auth) auth.signOut();
+        localStorage.removeItem('bagged_user_email');
+        localStorage.removeItem('bagged_id_token');
+        localStorage.removeItem('bagged_local_id');
+        checkAuthState();
+    });
+}
 
 // ========== APP LOGIC ==========
-// Trigger GitHub Actions deploy test 2
 document.addEventListener('DOMContentLoaded', function () {
     const saveBtn = document.getElementById('save-btn');
     const bagSelect = document.getElementById('bag-selector');
     const addBagBtn = document.getElementById('add-bag-btn');
 
     function toProperCase(str) {
+        if (!str) return "";
         return str.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
     }
 
-    async function initApp() {
-        const user = auth.currentUser;
-        if (!user) return;
+    async function getUserUid() {
+        if (auth && auth.currentUser) return auth.currentUser.uid;
+        const localId = localStorage.getItem('bagged_local_id');
+        if (localId) return localId;
+        const email = localStorage.getItem('bagged_user_email');
+        if (email) return btoa(email).replace(/=/g, '');
+        return null;
+    }
 
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-        // Inject content script first to ensure it's available
+    async function getActiveTab() {
         try {
-            await chrome.scripting.executeScript({
-                target: { tabId: tab.id },
-                files: ['content.js']
-            });
+            let tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (tabs && tabs.length > 0) return tabs[0];
+            tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+            if (tabs && tabs.length > 0) return tabs[0];
+            tabs = await chrome.tabs.query({ active: true });
+            if (tabs && tabs.length > 0) return tabs[0];
         } catch (e) {
-            console.log("Script injection:", e.message);
+            console.warn("Active tab query notice:", e);
         }
+        return null;
+    }
 
-        // Small delay to ensure script is ready
-        setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, { action: "getProduct" }, (response) => {
-                if (chrome.runtime.lastError) {
-                    document.getElementById('product-name').innerText = "Could not read this page";
-                    console.log(chrome.runtime.lastError.message);
-                    return;
-                }
-                if (response) {
-                    document.getElementById('product-img').src = response.image;
-                    document.getElementById('product-img').style.display = response.image ? "block" : "none";
-                    document.getElementById('product-brand').innerText = (response.brand || "").toLowerCase();
-                    document.getElementById('product-name').innerText = toProperCase(response.name);
-                    document.getElementById('product-price').innerText = response.price;
-                    window.currentProduct = response;
-                }
-            });
-        }, 300);
+    async function initApp() {
+        const uid = await getUserUid();
+        if (!uid) return;
+
+        const tab = await getActiveTab();
+        if (tab && tab.id) {
+            // Inject content script first to ensure it's available
+            try {
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['content.js']
+                });
+            } catch (e) {
+                console.log("Script injection notice:", e.message);
+            }
+
+            setTimeout(() => {
+                chrome.tabs.sendMessage(tab.id, { action: "getProduct" }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        const nameEl = document.getElementById('product-name');
+                        if (nameEl) nameEl.innerText = "Could not read this page";
+                        return;
+                    }
+                    if (response) {
+                        const imgEl = document.getElementById('product-img');
+                        if (imgEl) {
+                            imgEl.src = response.image;
+                            imgEl.style.display = response.image ? "block" : "none";
+                        }
+                        const brandEl = document.getElementById('product-brand');
+                        if (brandEl) brandEl.innerText = (response.brand || "").toLowerCase();
+                        const nameEl = document.getElementById('product-name');
+                        if (nameEl) nameEl.innerText = toProperCase(response.name);
+                        const priceEl = document.getElementById('product-price');
+                        if (priceEl) priceEl.innerText = response.price;
+                        window.currentProduct = response;
+                    }
+                });
+            }, 250);
+        }
 
         loadBagsFromCloud();
     }
 
     async function loadBagsFromCloud() {
-        const user = auth.currentUser;
-        if (!user) return;
-        const snapshot = await db.collection('users').doc(user.uid).collection('wishlists').get();
-        bagSelect.innerHTML = '<option value="General">My Main Bag</option>';
-        snapshot.forEach(doc => {
-            if (doc.id !== "General") {
-                let opt = document.createElement('option');
-                opt.value = doc.id;
-                opt.innerText = toProperCase(doc.id);
-                bagSelect.appendChild(opt);
+        const uid = await getUserUid();
+        if (!uid) return;
+        
+        if (bagSelect) bagSelect.innerHTML = '<option value="General">My Main Bag</option>';
+        
+        if (db) {
+            try {
+                const snapshot = await db.collection('users').doc(uid).collection('wishlists').get();
+                snapshot.forEach(doc => {
+                    if (doc.id !== "General" && bagSelect) {
+                        let opt = document.createElement('option');
+                        opt.value = doc.id;
+                        opt.innerText = toProperCase(doc.id);
+                        bagSelect.appendChild(opt);
+                    }
+                });
+            } catch (e) {
+                console.warn("Firestore SDK wishlist load notice, trying REST API:", e);
+                await loadBagsFromREST(uid);
             }
-        });
+        } else {
+            await loadBagsFromREST(uid);
+        }
 
-        // Default to the last bag the user saved to or created
-        const lastBag = localStorage.getItem('lastUsedBag_' + user.uid);
-        if (lastBag) {
-            // Check the bag still exists in the dropdown
+        // Default to the last used bag
+        const lastBag = localStorage.getItem('lastUsedBag_' + uid);
+        if (lastBag && bagSelect) {
             const exists = Array.from(bagSelect.options).some(opt => opt.value === lastBag);
             if (exists) bagSelect.value = lastBag;
         }
     }
 
-    addBagBtn.addEventListener('click', async () => {
-        const user = auth.currentUser;
-        if (!user) return;
-        const name = document.getElementById('new-bag-name').value.trim();
-        if (name) {
-            await db.collection('users').doc(user.uid).collection('wishlists').doc(name).set({ created: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-            localStorage.setItem('lastUsedBag_' + user.uid, name);
-            await loadBagsFromCloud();
-            bagSelect.value = name;
-            document.getElementById('new-bag-name').value = "";
-        }
-    });
-
-    saveBtn.addEventListener('click', async () => {
-        const user = auth.currentUser;
-        if (!user || !window.currentProduct) return;
-        const selectedBag = bagSelect.value || "General";
-
+    async function loadBagsFromREST(uid) {
         try {
-            await db.collection('users').doc(user.uid).collection('wishlists').doc(selectedBag).collection('items').add({
-                ...window.currentProduct,
-                size: window.currentProduct.activeSize || "",
-                color: window.currentProduct.activeColor || "",
-                sizes: window.currentProduct.sizes || [],
-                colors: window.currentProduct.colors || [],
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            localStorage.setItem('lastUsedBag_' + user.uid, selectedBag);
-            saveBtn.innerText = "BAGGED!";
-            saveBtn.style.backgroundColor = "#27ae60";
-            setTimeout(() => {
-                saveBtn.innerText = "ADD TO BAGGED";
-                saveBtn.style.backgroundColor = "black";
-            }, 2000);
-        } catch (e) { console.error("Save error:", e); }
-    });
+            const res = await fetch(`https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`);
+            const data = await res.json();
+            if (data.documents) {
+                data.documents.forEach(doc => {
+                    const docId = doc.name.split('/').pop();
+                    if (docId && docId !== "General" && bagSelect) {
+                        let opt = document.createElement('option');
+                        opt.value = docId;
+                        opt.innerText = toProperCase(docId);
+                        bagSelect.appendChild(opt);
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn("REST wishlist load notice:", e);
+        }
+    }
 
-    document.getElementById('view-bags-btn').onclick = () => chrome.tabs.create({ url: 'dashboard.html' });
+    if (addBagBtn) {
+        addBagBtn.addEventListener('click', async () => {
+            const uid = await getUserUid();
+            if (!uid) return;
+            const nameInput = document.getElementById('new-bag-name');
+            const name = nameInput ? nameInput.value.trim() : '';
+            if (name) {
+                if (db) {
+                    try {
+                        await db.collection('users').doc(uid).collection('wishlists').doc(name).set({ created: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    } catch (_) {}
+                }
+                localStorage.setItem('lastUsedBag_' + uid, name);
+                await loadBagsFromCloud();
+                if (bagSelect) bagSelect.value = name;
+                if (nameInput) nameInput.value = "";
+            }
+        });
+    }
 
-    // Expose initApp globally so auth state listener can call it
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async () => {
+            const uid = await getUserUid();
+            if (!uid || !window.currentProduct) return;
+            const selectedBag = (bagSelect ? bagSelect.value : '') || "General";
+
+            try {
+                if (db) {
+                    await db.collection('users').doc(uid).collection('wishlists').doc(selectedBag).collection('items').add({
+                        ...window.currentProduct,
+                        size: window.currentProduct.activeSize || "",
+                        color: window.currentProduct.activeColor || "",
+                        sizes: window.currentProduct.sizes || [],
+                        colors: window.currentProduct.colors || [],
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+                localStorage.setItem('lastUsedBag_' + uid, selectedBag);
+                saveBtn.innerText = "BAGGED!";
+                saveBtn.style.backgroundColor = "#27ae60";
+                setTimeout(() => {
+                    saveBtn.innerText = "ADD TO BAGGED";
+                    saveBtn.style.backgroundColor = "black";
+                }, 2000);
+            } catch (e) { console.error("Save error:", e); }
+        });
+    }
+
+    const viewBagsBtn = document.getElementById('view-bags-btn');
+    if (viewBagsBtn) {
+        viewBagsBtn.onclick = () => chrome.tabs.create({ url: 'dashboard.html' });
+    }
+
     window.initApp = initApp;
+    initApp();
 });
 
 function init() {
