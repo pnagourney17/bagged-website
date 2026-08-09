@@ -15,11 +15,10 @@ try {
     if (typeof firebase !== 'undefined') {
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         auth = firebase.auth();
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-            .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.SESSION))
-            .catch(() => auth.setPersistence(firebase.auth.Auth.Persistence.NONE))
-            .catch(err => console.warn("Auth persistence notice:", err));
-        db = firebase.firestore();
+        if (!db) {
+            db = firebase.firestore();
+            try { db.settings({ merge: true }); } catch (_) {}
+        }
     }
 } catch (e) {
     console.warn("Firebase SDK init notice:", e);

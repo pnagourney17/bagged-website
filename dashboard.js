@@ -10,6 +10,7 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const auth = firebase.auth();
 const db = firebase.firestore();
+try { db.settings({ merge: true }); } catch (_) {}
 
 function cleanPrice(price) {
     if (!price) return '£0.00';
