@@ -339,6 +339,15 @@ if (auth) {
 document.addEventListener('DOMContentLoaded', function () {
     checkAuthState();
 
+    // Attach form submit handler via JS (inline onsubmit blocked by extension CSP)
+    const loginForm = document.getElementById('popup-login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (window.handleAuthSubmit) window.handleAuthSubmit(e);
+        });
+    }
+
     const authToggleLink = document.getElementById('auth-toggle-link');
     const authToggleText = document.getElementById('auth-toggle-text');
     const authSubmitBtn = document.getElementById('auth-submit-btn');
