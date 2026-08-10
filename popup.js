@@ -120,13 +120,28 @@ async function handleAuthSubmit(e) {
     // 1. Try Firebase Auth SDK first
     if (auth) {
         try {
+            let userCredential;
             if (isSignUp) {
-                await auth.createUserWithEmailAndPassword(email, password);
-                return false;
+                userCredential = await auth.createUserWithEmailAndPassword(email, password);
             } else {
-                await auth.signInWithEmailAndPassword(email, password);
-                return false;
+                userCredential = await auth.signInWithEmailAndPassword(email, password);
             }
+            // SDK succeeded — store credentials so extension popup survives close/reopen
+            if (userCredential && userCredential.user) {
+                const u = userCredential.user;
+                localStorage.setItem('bagged_user_email', u.email || email);
+                localStorage.setItem('bagged_local_id', u.uid);
+                try {
+                    const token = await u.getIdToken();
+                    if (token) localStorage.setItem('bagged_id_token', token);
+                } catch (_) {}
+            }
+            if (authSubmitBtn) {
+                authSubmitBtn.disabled = false;
+                authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
+            }
+            checkAuthState();
+            return false;
         } catch (sdkErr) {
             console.warn("SDK Auth failed, switching to direct REST API:", sdkErr);
         }
