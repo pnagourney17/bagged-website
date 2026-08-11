@@ -216,12 +216,22 @@ function fetchProductFromTab() {
 function queryTabProduct(tab) {
     if (!tab || !tab.id) return;
 
+    // Skip restricted pages where content scripts can't be injected
+    const url = tab.url || '';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+
     // Inject content.js to guarantee message receiver is ready
     if (chrome.scripting) {
         chrome.scripting.executeScript({
             target: { tabId: tab.id },
             files: ['content.js']
-        }, () => sendProductMessage(tab.id));
+        }, () => {
+            if (chrome.runtime.lastError) {
+                console.log("Script inject notice:", chrome.runtime.lastError.message);
+                return;
+            }
+            sendProductMessage(tab.id);
+        });
     } else {
         sendProductMessage(tab.id);
     }
