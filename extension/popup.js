@@ -460,7 +460,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const viewBagsBtn = document.getElementById('view-bags-btn');
     if (viewBagsBtn) {
-        viewBagsBtn.onclick = () => chrome.tabs.create({ url: 'dashboard.html' });
+        viewBagsBtn.onclick = () => {
+            const email = localStorage.getItem('bagged_user_email') || '';
+            const dashUrl = email 
+                ? 'https://www.shop-bagged.com/dashboard/' + encodeURIComponent(email)
+                : 'https://www.shop-bagged.com/dashboard';
+            chrome.tabs.create({ url: dashUrl });
+        };
     }
 });
 

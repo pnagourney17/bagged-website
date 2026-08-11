@@ -9,14 +9,20 @@
       "admin.js",
       "background.js",
       "content.js",
-      "dashboard.html",
-      "dashboard.js",
       "manifest.json",
       "popup.html",
       "popup.js",
       "firebase-firestore.js"
     ],
     "rewrites": [
+      {
+        "source": "/dashboard",
+        "destination": "/dashboard.html"
+      },
+      {
+        "source": "/dashboard/**",
+        "destination": "/dashboard.html"
+      },
       {
         "source": "**",
         "destination": "/landing.html"

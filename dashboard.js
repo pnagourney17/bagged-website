@@ -154,6 +154,13 @@ if (publicSharedParams) {
             mainContent.style.display = '';
             loginGate.style.display = 'none';
             document.getElementById('sidebar-email').innerText = user.email;
+            // Update URL to /dashboard/email without reload
+            if (window.location.protocol.startsWith('http')) {
+                const targetPath = '/dashboard/' + encodeURIComponent(user.email);
+                if (window.location.pathname !== targetPath) {
+                    window.history.replaceState(null, '', targetPath);
+                }
+            }
             loadCloudDashboard(user);
         } else {
             sidebar.style.display = 'none';
