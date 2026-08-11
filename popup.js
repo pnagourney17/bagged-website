@@ -250,14 +250,19 @@ function sendProductMessage(tabId) {
     });
 }
 
+let _loadingBags = false;
+
 async function loadBagsFromCloud() {
+    if (_loadingBags) return;
+    _loadingBags = true;
+
     const bagSelect = document.getElementById('bag-selector');
     if (bagSelect) {
         bagSelect.innerHTML = '<option value="General">My Main Bag</option>';
     }
 
     const uid = await getUserUid();
-    if (!uid) return;
+    if (!uid) { _loadingBags = false; return; }
     
     if (db) {
         try {
@@ -283,6 +288,8 @@ async function loadBagsFromCloud() {
         const exists = Array.from(bagSelect.options).some(opt => opt.value === lastBag);
         if (exists) bagSelect.value = lastBag;
     }
+
+    _loadingBags = false;
 }
 
 async function loadBagsFromREST(uid) {
