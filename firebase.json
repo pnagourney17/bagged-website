@@ -11,8 +11,7 @@
       "content.js",
       "manifest.json",
       "popup.html",
-      "popup.js",
-      "firebase-firestore.js"
+      "popup.js"
     ],
     "rewrites": [
       {
