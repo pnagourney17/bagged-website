@@ -148,6 +148,43 @@ if (publicSharedParams) {
     mainContent.style.display = '';
     loadPublicSharedDashboard(publicSharedParams.uid, publicSharedParams.bag);
 } else {
+    // Check for auto-login token from extension (passed via URL hash)
+    async function tryAutoLogin() {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = hashParams.get('token');
+        const email = hashParams.get('email');
+        const uid = hashParams.get('uid');
+        
+        if (token && email && uid) {
+            // Clear hash from URL for cleanliness
+            window.history.replaceState(null, '', window.location.pathname);
+            
+            // Try SDK sign-in first (uses the token to authenticate)
+            try {
+                await auth.signInWithEmailAndPassword(email, token);
+                return; // onAuthStateChanged will handle the rest
+            } catch (_) {}
+            
+            // If SDK fails, manually show dashboard using REST API with token
+            sidebar.style.display = 'flex';
+            mainContent.style.display = '';
+            loginGate.style.display = 'none';
+            document.getElementById('sidebar-email').innerText = email;
+            if (window.location.protocol.startsWith('http')) {
+                const targetPath = '/dashboard/' + encodeURIComponent(email);
+                if (window.location.pathname !== targetPath) {
+                    window.history.replaceState(null, '', targetPath);
+                }
+            }
+            // Load dashboard using REST API with the auth token
+            const fakeUser = { uid: uid, email: email, getIdToken: () => Promise.resolve(token) };
+            loadCloudDashboard(fakeUser);
+            return;
+        }
+    }
+    
+    tryAutoLogin();
+
     // Normal dashboard flow - require authentication
     auth.onAuthStateChanged((user) => {
         if (user) {

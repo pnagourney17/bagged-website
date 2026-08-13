@@ -462,9 +462,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (viewBagsBtn) {
         viewBagsBtn.onclick = () => {
             const email = localStorage.getItem('bagged_user_email') || '';
-            const dashUrl = email 
-                ? 'https://www.shop-bagged.com/dashboard/' + encodeURIComponent(email)
-                : 'https://www.shop-bagged.com/dashboard';
+            const token = localStorage.getItem('bagged_id_token') || '';
+            const uid = localStorage.getItem('bagged_local_id') || '';
+            let dashUrl = 'https://www.shop-bagged.com/dashboard';
+            if (email) {
+                dashUrl += '/' + encodeURIComponent(email);
+            }
+            if (token && uid) {
+                dashUrl += '#token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email) + '&uid=' + encodeURIComponent(uid);
+            }
             chrome.tabs.create({ url: dashUrl });
         };
     }
