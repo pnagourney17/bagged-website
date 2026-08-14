@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 350px;
+            min-width: 350px;
+            max-width: 350px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
+            background: #fff;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        /* ========== LOGIN VIEW ========== */
+        #login-view {
+            padding: 30px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .login-logo img {
+            width: 32px;
+            height: 32px;
+        }
+
+        .login-logo h2 {
+            margin: 0;
+            font-size: 22px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .login-subtitle {
+            font-size: 11px;
+            color: #999;
+            letter-spacing: 1.5px;
+            text-transform: lowercase;
+            margin-bottom: 28px;
+        }
+
+        .login-form {
+            width: 100%;
+        }
+
+        .login-form input {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+
+        .login-form input:focus {
+            border-color: #000;
+            background: #fff;
+        }
+
+        .login-form input::placeholder {
+            color: #bbb;
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+        }
+
+        .password-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .password-wrapper input {
+            padding-right: 42px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(calc(-50% - 5px));
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #bbb;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            text-transform: lowercase;
+            line-height: 1;
+            transition: color 0.2s, font-weight 0.2s;
+            font-family: inherit;
+        }
+
+        .toggle-password:hover {
+            color: #555;
+        }
+
+        .toggle-password.active {
+            color: #000;
+            font-weight: 700;
+        }
+
+        #confirm-password-wrapper {
+            display: none;
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        #confirm-password-wrapper.show {
+            display: block;
+            max-height: 60px;
+            opacity: 1;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            font-family: inherit;
+            margin-top: 4px;
+        }
+
+        .btn-primary:hover {
+            background: #222;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .toggle-link {
+            margin-top: 16px;
+            font-size: 11px;
+            color: #888;
+            text-align: center;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle-link a {
+            color: #000;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-link a:hover {
+            opacity: 0.6;
+        }
+
+        #auth-error {
+            width: 100%;
+            font-size: 11px;
+            color: #d63031;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 16px;
+            line-height: 1.4;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            margin: 16px 0;
+            gap: 12px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #e8e8e8;
+        }
+
+        .divider span {
+            font-size: 10px;
+            color: #bbb;
+            text-transform: lowercase;
+            letter-spacing: 1px;
+        }
+
+        /* ========== APP VIEW ========== */
+        #app-view {
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        h3 {
+            margin: 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        #sign-out-btn {
+            background: none;
+            border: none;
+            font-size: 10px;
+            color: #999;
+            cursor: pointer;
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+            font-family: inherit;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        #sign-out-btn:hover {
+            color: #000;
+            background: #f0f0f0;
+        }
+
+        #product-card {
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-bottom: 15px;
+            text-align: center;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        #product-img {
+            max-width: 100%;
+            height: 150px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            display: none;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #product-brand {
+            font-size: 10px;
+            color: #888;
+            letter-spacing: 1px;
+            margin: 0;
+            text-transform: lowercase;
+        }
+
+        #product-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin: 5px 0;
+            line-height: 1.2;
+            text-transform: capitalize;
+        }
+
+        #product-price {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000;
+            margin: 5px 0;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+        }
+
+        select,
+        .controls input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+
+        #add-bag-btn {
+            width: 100%;
+            padding: 8px;
+            font-size: 10px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        #save-btn {
+            background: black;
+            color: white;
+            width: 100%;
+            padding: 12px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        #view-bags-btn {
+            width: 100%;
+            margin-top: 10px;
+            background: white;
+            border: 1px solid #000;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        #user-email-display {
+            font-size: 9px;
+            color: #bbb;
+            text-align: center;
+            margin-top: 8px;
+            text-transform: lowercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ===== LOGIN VIEW ===== -->
+    <div id="login-view">
+        <div class="login-logo">
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFcAAABhCAYAAACj6z3cAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAA8iSURBVHhe7Z3pr9VEGIeH676CCyqooKhRET+gIIIswQ1F0Q9GUUk0QsQ/ANHEuEWNBIyJEmMwBiUhUZS4oyFGjUYFFyLBFRUFBRRxR3HXOs/cvmXOnGk7PactV7xP8uacOZ2l/XU6yzvTe3tEGtVNJXTEn6XBveq+X52UXnNF3B49esS/dD3qOrfSay50ZWHrpBJxu+mkW9wK6Ra3Qirp0NqhSHvdall19QldRly54L/++kt98cUX6rPPPlMffvih+uCDD9T333+vtttuO3XAAQeoY445Rh155JHq4IMPVvvss0+Srki5/xtx5UJ//PFHtXjxYvXQQw+p5cuXG4H/+OMPc8xljz32UP369VNjx45VF198sRoyZIjaYYcdgsuuS1xOqFT++eefYIM///wzWrBgQTR8+PBo++23R50G00I0mX28Z8+e0cSJE6O33nrL5Ae+smyri60mLmzYsCGaOnVqtOOOO2aKmWWSTjcZ0e233x5t3rzZ5O0rU6wutoq4sGLFimjEiBFeUeW3PHPTdHR0RJdddlm0ceNGU4avbKwuam9ztRDq7bffVpMmTVLvvvtuU/sn6ffff3/TcfXv31/tueee6u+//zYdGx3dxx9/rL799lsTz04vac877zx1zz33mA7Pdz5umZWhCy8VX00Rg/Xr10cnnngiV9xU87CBAwdGt912W6RHCskjLpDHpk2bTK2/8cYbowEDBiTp3HwuueSS6JdffknSuedRB7WJC3RePLa2GCLIbrvtFk2fPt2IH8qqVauiyy+/PNIjBa/AM2bMiGM2nldd1Cru3LlzkxGBLYR+fKP58+ebOOBL7zPQw7Xo7rvvjvTwrClf3bRES5YsMfHcdHVQi7igx63Rscce2yQAojAUE3zps0yYM2dOtPPOOzflP27cuOjnn382cdw0VVObuDNnzmy4cLn4m266yRwHX9oQAz2zi6ZNm2bylHL45El57LHHTBw7fh00iGufcFkGumePhg4d2iAu30eOHBnpEYCJ40tbxOC7776LTjrppKZyzjzzzOi3334zcXxpyzKXWsR97rnnGtpaPnfZZZdo0aJF5rgv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" alt="Bagged">
+            <h2>BAGGED</h2>
+        </div>
+        <p class="login-subtitle">your personal shopping assistant</p>
+
+        <form class="login-form" id="popup-login-form" action="#">
+            <input type="email" id="auth-email" placeholder="email address" autocomplete="email">
+            <div class="password-wrapper">
+                <input type="password" id="auth-password" placeholder="password" autocomplete="current-password">
+                <button type="button" class="toggle-password" id="toggle-auth-password" title="Show password">show</button>
+            </div>
+            <div id="confirm-password-wrapper">
+                <div class="password-wrapper">
+                    <input type="password" id="auth-confirm-password" placeholder="confirm password" autocomplete="new-password">
+                    <button type="button" class="toggle-password" id="toggle-auth-confirm" title="Show password">show</button>
+                </div>
+            </div>
+            <button type="submit" class="btn-primary" id="auth-submit-btn">sign in</button>
+        </form>
+
+        <div id="auth-error"></div>
+
+        <div class="toggle-link">
+            <span id="auth-toggle-text">don't have an account? </span>
+            <a id="auth-toggle-link">create one</a>
+        </div>
+        <div style="font-size: 8px; color: #ccc; text-align: center; margin-top: 20px; letter-spacing: 0.5px;">&copy; 2026 Bagged. All rights reserved. &bull; <a href="#" class="open-privacy-modal" style="color:#ccc; text-decoration:underline;">Privacy Policy</a></div>
+    </div>
+
+    <!-- ===== APP VIEW (existing UI) ===== -->
+    <div id="app-view">
+        <div class="header-container">
+            <div class="header-left">
+                <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFcAAABhCAYAAACj6z3cAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAA8iSURBVHhe7Z3pr9VEGIeH676CCyqooKhRET+gIIIswQ1F0Q9GUUk0QsQ/ANHEuEWNBIyJEmMwBiUhUZS4oyFGjUYFFyLBFRUFBRRxR3HXOs/cvmXOnGk7PactV7xP8uacOZ2l/XU6yzvTe3tEGtVNJXTEn6XBveq+X52UXnNF3B49esS/dD3qOrfSay50ZWHrpBJxu+mkW9wK6Ra3Qirp0NqhSHvdall19QldRly54L/++kt98cUX6rPPPlMffvih+uCDD9T333+vtttuO3XAAQeoY445Rh155JHq4IMPVvvss0+Srki5/xtx5UJ//PFHtXjxYvXQQw+p5cuXG4H/+OMPc8xljz32UP369VNjx45VF198sRoyZIjaYYcdgsuuS1xOqFT++eefYIM///wzWrBgQTR8+PBo++23R50G00I0mX28Z8+e0cSJE6O33nrL5Ae+smyri60mLmzYsCGaOnVqtOOOO2aKmWWSTjcZ0e233x5t3rzZ5O0rU6wutoq4sGLFimjEiBFeUeW3PHPTdHR0RJdddlm0ceNGU4avbKwuam9ztRDq7bffVpMmTVLvvvtuU/sn6ffff3/TcfXv31/tueee6u+//zYdGx3dxx9/rL799lsTz04vac877zx1zz33mA7Pdz5umZWhCy8VX00Rg/Xr10cnnngiV9xU87CBAwdGt912W6RHCskjLpDHpk2bTK2/8cYbowEDBiTp3HwuueSS6JdffknSuedRB7WJC3RePLa2GCLIbrvtFk2fPt2IH8qqVauiyy+/PNIjBa/AM2bMiGM2nldd1Cru3LlzkxGBLYR+fKP58+ebOOBL7zPQw7Xo7rvvjvTwrClf3bRES5YsMfHcdHVQi7igx63Rscce2yQAojAUE3zps0yYM2dOtPPOOzflP27cuOjnn382cdw0VVObuDNnzmy4cLn4m266yRwHX9oQAz2zi6ZNm2bylHL45El57LHHTBw7fh00iGufcFkGumePhg4d2iAu30eOHBnpEYCJ40tbxOC7776LTjrppKZyzjzzzOi3334zcXxpyzKXWsR97rnnGtpaPnfZZZdo0aJF5rgv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" style="width: 24px; height: 24px;" alt="Bagged">
+                <h3>BAGGED</h3>
+            </div>
+            <button id="sign-out-btn">sign out</button>
+        </div>
+        <div id="product-card">
+            <img id="product-img" src="">
+            <p id="product-brand"></p>
+            <p id="product-name">finding product...</p>
+            <p id="product-price"></p>
+        </div>
+        <div class="controls">
+            <select id="bag-selector">
+                <option value="General">My Main Bag</option>
+            </select>
+            <input type="text" id="new-bag-name" placeholder="name new wishlist...">
+            <button id="add-bag-btn">create wishlist</button>
+        </div>
+        <button id="save-btn">add to bagged</button>
+        <button id="view-bags-btn">view all bags</button>
+        <div id="user-email-display"></div>
+        <div style="font-size: 8px; color: #ccc; text-align: center; margin-top: 15px; letter-spacing: 0.5px;">&copy; 2026 Bagged. All rights reserved. &bull; <a href="#" class="open-privacy-modal" style="color:#ccc; text-decoration:underline;">Privacy Policy</a></div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacy-modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.3); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:12px; width:calc(100% - 24px); max-height:80vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.15); overflow:hidden; margin:12px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 18px 14px; border-bottom:1px solid #eee;">
+                <span style="font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase;">Privacy Policy &amp; Support</span>
+                <button id="privacy-modal-close" style="background:none; border:none; font-size:20px; cursor:pointer; color:#999; line-height:1;">&times;</button>
+            </div>
+            <div style="padding:16px 18px; overflow-y:auto; flex:1; font-size:11px; color:#555; line-height:1.7;">
+                <a href="mailto:info@shop-bagged.com" style="display:inline-flex; align-items:center; gap:6px; font-size:11px; color:#000; text-decoration:none; font-weight:500; padding:8px 12px; border:1px solid #eee; border-radius:6px; margin-bottom:16px;">
+                    ✉ info@shop-bagged.com
+                </a>
+                <div style="background:#fafafa; border:1px solid #eee; border-radius:8px; padding:14px 16px;">
+                    <p style="margin:0 0 8px;"><strong>Last Updated: 2/4/2026</strong></p>
+                    <p style="margin:10px 0 4px; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:600;">1. Introduction</p>
+                    <p style="margin:0 0 8px;">This Privacy Policy describes how Bagged collects and uses information when you install and use the Bagged Chrome Extension.</p>
+                    <p style="margin:10px 0 4px; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:600;">2. Information We Collect</p>
+                    <p style="margin:0 0 4px;"><strong>Name:</strong> To personalize your experience.</p>
+                    <p style="margin:0 0 8px;"><strong>Email Address:</strong> To identify your account and sync across devices.</p>
+                    <p style="margin:10px 0 4px; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:600;">3. How We Use Your Information</p>
+                    <p style="margin:0 0 8px;">Account management, syncing, and essential communication only. We do <strong>not</strong> sell or trade your data.</p>
+                    <p style="margin:10px 0 4px; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:600;">4. Data Deletion</p>
+                    <p style="margin:0 0 8px;">Email <strong>info@shop-bagged.com</strong> to delete your data within 7 business days.</p>
+                    <p style="margin:10px 0 4px; font-size:9px; text-transform:uppercase; letter-spacing:1px; color:#999; font-weight:600;">5. Google User Data Policy</p>
+                    <p style="margin:0;">Bagged complies with Chrome Web Store User Data Policy and Limited Use requirements.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-app.js"></script>
+    <script src="firebase-auth.js"></script>
+    <script src="firebase-firestore.js"></script>
+    <script src="popup.js"></script>
+</body>
+
+</html>

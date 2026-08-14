@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Bagged",
   "version": "1.0.9",
+  "description": "Your personal shopping assistant. Save, organise and share your favourite finds from any store.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -24,6 +25,7 @@
     "default_icon": "icon.png"
   },
   "background": {
+    "scripts": ["background.js"],
     "service_worker": "background.js"
   },
   "content_scripts": [

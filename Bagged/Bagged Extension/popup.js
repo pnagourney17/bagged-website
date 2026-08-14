@@ -117,25 +117,15 @@ async function handleAuthSubmit(e) {
         authSubmitBtn.innerText = isSignUp ? 'creating...' : 'signing in...';
     }
 
-    // 1. Try Firebase Auth SDK first (with timeout for Safari compatibility)
+    // 1. Try Firebase Auth SDK first
     if (auth) {
         try {
-            const sdkAuthPromise = (async () => {
-                let userCredential;
-                if (isSignUp) {
-                    userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                } else {
-                    userCredential = await auth.signInWithEmailAndPassword(email, password);
-                }
-                return userCredential;
-            })();
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
-            );
-
-            const userCredential = await Promise.race([sdkAuthPromise, timeoutPromise]);
-
+            let userCredential;
+            if (isSignUp) {
+                userCredential = await auth.createUserWithEmailAndPassword(email, password);
+            } else {
+                userCredential = await auth.signInWithEmailAndPassword(email, password);
+            }
             // SDK succeeded — store credentials so extension popup survives close/reopen
             if (userCredential && userCredential.user) {
                 const u = userCredential.user;
@@ -153,7 +143,7 @@ async function handleAuthSubmit(e) {
             checkAuthState();
             return false;
         } catch (sdkErr) {
-            console.warn("SDK Auth failed or timed out, switching to REST API:", sdkErr.message);
+            console.warn("SDK Auth failed, switching to direct REST API:", sdkErr);
         }
     }
 

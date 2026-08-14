@@ -7,6 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3A2AE1FA302F37EC00B5A13F /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F6302F37EC00B5A13F /* icon.png */; };
+		3A2AE1FB302F37EC00B5A13F /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F7302F37EC00B5A13F /* manifest.json */; };
+		3A2AE1FC302F37EC00B5A13F /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F8302F37EC00B5A13F /* popup.html */; };
+		3A2AE1FD302F37EC00B5A13F /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F9302F37EC00B5A13F /* popup.js */; };
+		3A2AE1FE302F37EC00B5A13F /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1EF302F37EC00B5A13F /* background.js */; };
+		3A2AE1FF302F37EC00B5A13F /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F0302F37EC00B5A13F /* content.js */; };
+		3A2AE200302F37EC00B5A13F /* dashboard.html in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F1302F37EC00B5A13F /* dashboard.html */; };
+		3A2AE201302F37EC00B5A13F /* dashboard.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F2302F37EC00B5A13F /* dashboard.js */; };
+		3A2AE202302F37EC00B5A13F /* firebase-auth.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F4302F37EC00B5A13F /* firebase-auth.js */; };
+		3A2AE203302F37EC00B5A13F /* firebase-firestore.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F5302F37EC00B5A13F /* firebase-firestore.js */; };
+		3A2AE204302F37EC00B5A13F /* firebase-app.js in Resources */ = {isa = PBXBuildFile; fileRef = 3A2AE1F3302F37EC00B5A13F /* firebase-app.js */; };
 		3AA680113027EF8600FD8838 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA680103027EF8600FD8838 /* AppDelegate.swift */; };
 		3AA680153027EF8600FD8838 /* Main.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680133027EF8600FD8838 /* Main.html */; };
 		3AA680173027EF8600FD8838 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680163027EF8600FD8838 /* Icon.png */; };
@@ -18,12 +29,6 @@
 		3AA6802B3027EF8600FD8838 /* Bagged Extension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3AA6802A3027EF8600FD8838 /* Bagged Extension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		3AA680303027EF8600FD8838 /* SafariWebExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA6802F3027EF8600FD8838 /* SafariWebExtensionHandler.swift */; };
 		3AA680323027EF8600FD8838 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680243027EF8600FD8838 /* Assets.xcassets */; };
-		3AA680433027EF8600FD8838 /* Icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803D3027EF8600FD8838 /* Icon.png */; };
-		3AA680443027EF8600FD8838 /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803E3027EF8600FD8838 /* popup.js */; };
-		3AA680453027EF8600FD8838 /* background.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA6803F3027EF8600FD8838 /* background.js */; };
-		3AA680463027EF8600FD8838 /* popup.html in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680403027EF8600FD8838 /* popup.html */; };
-		3AA680473027EF8600FD8838 /* manifest.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680413027EF8600FD8838 /* manifest.json */; };
-		3AA680483027EF8600FD8838 /* content.js in Resources */ = {isa = PBXBuildFile; fileRef = 3AA680423027EF8600FD8838 /* content.js */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +56,17 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3A2AE1EF302F37EC00B5A13F /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
+		3A2AE1F0302F37EC00B5A13F /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
+		3A2AE1F1302F37EC00B5A13F /* dashboard.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = dashboard.html; sourceTree = "<group>"; };
+		3A2AE1F2302F37EC00B5A13F /* dashboard.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = dashboard.js; sourceTree = "<group>"; };
+		3A2AE1F3302F37EC00B5A13F /* firebase-app.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "firebase-app.js"; sourceTree = "<group>"; };
+		3A2AE1F4302F37EC00B5A13F /* firebase-auth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "firebase-auth.js"; sourceTree = "<group>"; };
+		3A2AE1F5302F37EC00B5A13F /* firebase-firestore.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "firebase-firestore.js"; sourceTree = "<group>"; };
+		3A2AE1F6302F37EC00B5A13F /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
+		3A2AE1F7302F37EC00B5A13F /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
+		3A2AE1F8302F37EC00B5A13F /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
+		3A2AE1F9302F37EC00B5A13F /* popup.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = popup.js; sourceTree = "<group>"; };
 		3AA6800D3027EF8600FD8838 /* Bagged.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Bagged.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AA680103027EF8600FD8838 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		3AA680143027EF8600FD8838 /* Base */ = {isa = PBXFileReference; lastKnownFileType = text.html; name = Base; path = Base.lproj/Main.html; sourceTree = "<group>"; };
@@ -137,6 +153,17 @@
 		3AA6802E3027EF8600FD8838 /* Bagged Extension */ = {
 			isa = PBXGroup;
 			children = (
+				3A2AE1EF302F37EC00B5A13F /* background.js */,
+				3A2AE1F0302F37EC00B5A13F /* content.js */,
+				3A2AE1F1302F37EC00B5A13F /* dashboard.html */,
+				3A2AE1F2302F37EC00B5A13F /* dashboard.js */,
+				3A2AE1F3302F37EC00B5A13F /* firebase-app.js */,
+				3A2AE1F4302F37EC00B5A13F /* firebase-auth.js */,
+				3A2AE1F5302F37EC00B5A13F /* firebase-firestore.js */,
+				3A2AE1F6302F37EC00B5A13F /* icon.png */,
+				3A2AE1F7302F37EC00B5A13F /* manifest.json */,
+				3A2AE1F8302F37EC00B5A13F /* popup.html */,
+				3A2AE1F9302F37EC00B5A13F /* popup.js */,
 				3AA6803C3027EF8600FD8838 /* Resources */,
 				3AA6802F3027EF8600FD8838 /* SafariWebExtensionHandler.swift */,
 				3AA680313027EF8600FD8838 /* Info.plist */,
@@ -257,12 +284,17 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3AA680483027EF8600FD8838 /* content.js in Resources */,
-				3AA680433027EF8600FD8838 /* Icon.png in Resources */,
-				3AA680463027EF8600FD8838 /* popup.html in Resources */,
-				3AA680473027EF8600FD8838 /* manifest.json in Resources */,
-				3AA680453027EF8600FD8838 /* background.js in Resources */,
-				3AA680443027EF8600FD8838 /* popup.js in Resources */,
+				3A2AE1FA302F37EC00B5A13F /* icon.png in Resources */,
+				3A2AE1FB302F37EC00B5A13F /* manifest.json in Resources */,
+				3A2AE1FC302F37EC00B5A13F /* popup.html in Resources */,
+				3A2AE1FD302F37EC00B5A13F /* popup.js in Resources */,
+				3A2AE1FE302F37EC00B5A13F /* background.js in Resources */,
+				3A2AE1FF302F37EC00B5A13F /* content.js in Resources */,
+				3A2AE200302F37EC00B5A13F /* dashboard.html in Resources */,
+				3A2AE201302F37EC00B5A13F /* dashboard.js in Resources */,
+				3A2AE202302F37EC00B5A13F /* firebase-auth.js in Resources */,
+				3A2AE203302F37EC00B5A13F /* firebase-firestore.js in Resources */,
+				3A2AE204302F37EC00B5A13F /* firebase-app.js in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
