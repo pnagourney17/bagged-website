@@ -163,12 +163,18 @@ async function handleAuthSubmit(e) {
             ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
             : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
         
+        // Add timeout to fetch for Safari
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 8000);
+
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, returnSecureToken: true })
+            body: JSON.stringify({ email, password, returnSecureToken: true }),
+            signal: controller.signal
         });
 
+        clearTimeout(fetchTimeout);
         const data = await res.json();
         if (data.error) {
             const errCode = data.error.message || data.error.code;
@@ -189,7 +195,9 @@ async function handleAuthSubmit(e) {
         }
     } catch (restErr) {
         console.error("REST Auth error:", restErr);
-        if (authError) authError.innerText = friendlyError(restErr.message);
+        if (authError) authError.innerText = restErr.name === 'AbortError' 
+            ? 'connection timed out — please try again' 
+            : friendlyError(restErr.message);
         if (authSubmitBtn) {
             authSubmitBtn.disabled = false;
             authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';

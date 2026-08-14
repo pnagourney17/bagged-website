@@ -12,7 +12,7 @@
     "<all_urls>"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;"
   },
   "icons": {
     "16": "icon.png",
