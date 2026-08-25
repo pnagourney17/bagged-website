@@ -117,15 +117,25 @@ async function handleAuthSubmit(e) {
         authSubmitBtn.innerText = isSignUp ? 'creating...' : 'signing in...';
     }
 
-    // 1. Try Firebase Auth SDK first
+    // 1. Try Firebase Auth SDK first (with timeout for Safari compatibility)
     if (auth) {
         try {
-            let userCredential;
-            if (isSignUp) {
-                userCredential = await auth.createUserWithEmailAndPassword(email, password);
-            } else {
-                userCredential = await auth.signInWithEmailAndPassword(email, password);
-            }
+            const sdkAuthPromise = (async () => {
+                let userCredential;
+                if (isSignUp) {
+                    userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                } else {
+                    userCredential = await auth.signInWithEmailAndPassword(email, password);
+                }
+                return userCredential;
+            })();
+
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
+            );
+
+            const userCredential = await Promise.race([sdkAuthPromise, timeoutPromise]);
+
             // SDK succeeded — store credentials so extension popup survives close/reopen
             if (userCredential && userCredential.user) {
                 const u = userCredential.user;
@@ -143,7 +153,7 @@ async function handleAuthSubmit(e) {
             checkAuthState();
             return false;
         } catch (sdkErr) {
-            console.warn("SDK Auth failed, switching to direct REST API:", sdkErr);
+            console.warn("SDK Auth failed or timed out, switching to REST API:", sdkErr.message);
         }
     }
 
@@ -153,12 +163,18 @@ async function handleAuthSubmit(e) {
             ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
             : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
         
+        // Add timeout to fetch for Safari
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 8000);
+
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password, returnSecureToken: true })
+            body: JSON.stringify({ email, password, returnSecureToken: true }),
+            signal: controller.signal
         });
 
+        clearTimeout(fetchTimeout);
         const data = await res.json();
         if (data.error) {
             const errCode = data.error.message || data.error.code;
@@ -173,13 +189,16 @@ async function handleAuthSubmit(e) {
                 localStorage.setItem('bagged_user_email', data.email || email);
                 localStorage.setItem('bagged_id_token', data.idToken);
                 localStorage.setItem('bagged_local_id', data.localId || btoa(email).replace(/=/g, ''));
+                if (data.refreshToken) localStorage.setItem('bagged_refresh_token', data.refreshToken);
             } catch (_) {}
 
             checkAuthState();
         }
     } catch (restErr) {
         console.error("REST Auth error:", restErr);
-        if (authError) authError.innerText = friendlyError(restErr.message);
+        if (authError) authError.innerText = restErr.name === 'AbortError' 
+            ? 'connection timed out — please try again' 
+            : friendlyError(restErr.message);
         if (authSubmitBtn) {
             authSubmitBtn.disabled = false;
             authSubmitBtn.innerText = isSignUp ? 'create account' : 'sign in';
@@ -274,9 +293,18 @@ async function loadBagsFromCloud() {
     const uid = await getUserUid();
     if (!uid) { _loadingBags = false; return; }
     
-    if (db) {
+    // Safari Web Extensions don't support Firestore SDK properly — go straight to REST
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
+                     (typeof browser !== 'undefined' && typeof chrome === 'undefined');
+    
+    if (db && !isSafari) {
         try {
-            const snapshot = await db.collection('users').doc(uid).collection('wishlists').get();
+            // Add timeout for safety
+            const sdkPromise = db.collection('users').doc(uid).collection('wishlists').get();
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
+            );
+            const snapshot = await Promise.race([sdkPromise, timeoutPromise]);
             snapshot.forEach(doc => {
                 if (doc.id !== "General" && bagSelect) {
                     let opt = document.createElement('option');
@@ -305,8 +333,56 @@ async function loadBagsFromCloud() {
 async function loadBagsFromREST(uid) {
     const bagSelect = document.getElementById('bag-selector');
     try {
-        const res = await fetch(`https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`);
-        const data = await res.json();
+        const token = localStorage.getItem('bagged_id_token') || '';
+        
+        console.log('[Bagged REST] Loading bags for uid:', uid, 'token present:', !!token);
+        
+        const controller = new AbortController();
+        const fetchTimeout = setTimeout(() => controller.abort(), 8000);
+        
+        // Use Firestore REST with ID token as query parameter (Bearer header requires OAuth tokens)
+        let url = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`;
+        
+        const res = await fetch(url, { 
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+            signal: controller.signal 
+        });
+        clearTimeout(fetchTimeout);
+        
+        console.log('[Bagged REST] Response status:', res.status);
+        let data = await res.json();
+        console.log('[Bagged REST] Data:', JSON.stringify(data).substring(0, 500));
+        
+        // If Bearer auth failed (403), retry with token as URL parameter
+        if (data.error && data.error.code === 403 && token) {
+            console.log('[Bagged REST] Bearer failed, retrying with URL token...');
+            const res2 = await fetch(url + '?access_token=' + encodeURIComponent(token));
+            data = await res2.json();
+            console.log('[Bagged REST] Retry status:', res2.status, 'Data:', JSON.stringify(data).substring(0, 300));
+        }
+        
+        // If still failing, try the legacy Firebase REST endpoint  
+        if (data.error && token) {
+            console.log('[Bagged REST] Trying legacy Firebase endpoint...');
+            const legacyUrl = `https://bagged-dc0f7.firebaseio.com/users/${uid}/wishlists.json?auth=${token}`;
+            const res3 = await fetch(legacyUrl);
+            const legacyData = await res3.json();
+            console.log('[Bagged REST] Legacy data:', JSON.stringify(legacyData).substring(0, 300));
+            
+            // Legacy format is different - convert
+            if (legacyData && typeof legacyData === 'object' && !legacyData.error) {
+                Object.keys(legacyData).forEach(docId => {
+                    if (docId !== "General" && bagSelect) {
+                        let opt = document.createElement('option');
+                        opt.value = docId;
+                        opt.innerText = toProperCase(docId);
+                        bagSelect.appendChild(opt);
+                    }
+                });
+                return; // Done via legacy
+            }
+        }
+        
         if (data.documents) {
             data.documents.forEach(doc => {
                 const docId = doc.name.split('/').pop();
@@ -317,6 +393,45 @@ async function loadBagsFromREST(uid) {
                     bagSelect.appendChild(opt);
                 }
             });
+        } else if (data.error) {
+            console.error('[Bagged REST] Firestore error:', data.error.message);
+            
+            // Last resort: refresh the token and retry
+            if (token) {
+                console.log('[Bagged REST] Attempting token refresh...');
+                try {
+                    const refreshRes = await fetch(
+                        `https://securetoken.googleapis.com/v1/token?key=AIzaSyA1BJ5_ItJr_S9bExIIz_oaeg-HYDMc7LY`,
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                            body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(localStorage.getItem('bagged_refresh_token') || '')
+                        }
+                    );
+                    const refreshData = await refreshRes.json();
+                    if (refreshData.id_token) {
+                        localStorage.setItem('bagged_id_token', refreshData.id_token);
+                        // Retry with new token
+                        const retryRes = await fetch(url, {
+                            headers: { 'Authorization': 'Bearer ' + refreshData.id_token }
+                        });
+                        const retryData = await retryRes.json();
+                        if (retryData.documents) {
+                            retryData.documents.forEach(doc => {
+                                const docId = doc.name.split('/').pop();
+                                if (docId && docId !== "General" && bagSelect) {
+                                    let opt = document.createElement('option');
+                                    opt.value = docId;
+                                    opt.innerText = toProperCase(docId);
+                                    bagSelect.appendChild(opt);
+                                }
+                            });
+                        }
+                    }
+                } catch (refreshErr) {
+                    console.warn('[Bagged REST] Token refresh failed:', refreshErr);
+                }
+            }
         }
     } catch (e) {
         console.warn("REST wishlist load notice:", e);
@@ -417,10 +532,28 @@ document.addEventListener('DOMContentLoaded', function () {
             const nameInput = document.getElementById('new-bag-name');
             const name = nameInput ? nameInput.value.trim() : '';
             if (name) {
-                if (db) {
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
+                                 (typeof browser !== 'undefined' && typeof chrome === 'undefined');
+                let saved = false;
+                if (db && !isSafari) {
                     try {
                         await db.collection('users').doc(uid).collection('wishlists').doc(name).set({ created: true, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                        saved = true;
                     } catch (_) {}
+                }
+                if (!saved) {
+                    // REST fallback for Safari
+                    try {
+                        const token = localStorage.getItem('bagged_id_token') || '';
+                        await fetch(
+                            `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists/${encodeURIComponent(name)}`,
+                            {
+                                method: 'PATCH',
+                                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fields: { created: { booleanValue: true } } })
+                            }
+                        );
+                    } catch (e) { console.warn('REST create wishlist error:', e); }
                 }
                 localStorage.setItem('lastUsedBag_' + uid, name);
                 await loadBagsFromCloud();
@@ -437,15 +570,46 @@ document.addEventListener('DOMContentLoaded', function () {
             const selectedBag = (bagSelect ? bagSelect.value : '') || "General";
 
             try {
-                if (db) {
-                    await db.collection('users').doc(uid).collection('wishlists').doc(selectedBag).collection('items').add({
-                        ...window.currentProduct,
-                        size: window.currentProduct.activeSize || "",
-                        color: window.currentProduct.activeColor || "",
-                        sizes: window.currentProduct.sizes || [],
-                        colors: window.currentProduct.colors || [],
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                const product = {
+                    ...window.currentProduct,
+                    size: window.currentProduct.activeSize || "",
+                    color: window.currentProduct.activeColor || "",
+                    sizes: window.currentProduct.sizes || [],
+                    colors: window.currentProduct.colors || []
+                };
+
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) || 
+                                 (typeof browser !== 'undefined' && typeof chrome === 'undefined');
+                let saved = false;
+                if (db && !isSafari) {
+                    try {
+                        await db.collection('users').doc(uid).collection('wishlists').doc(selectedBag).collection('items').add({
+                            ...product,
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        saved = true;
+                    } catch (_) {}
+                }
+                if (!saved) {
+                    // REST fallback for Safari
+                    const token = localStorage.getItem('bagged_id_token') || '';
+                    const fields = {};
+                    Object.entries(product).forEach(([k, v]) => {
+                        if (typeof v === 'string') fields[k] = { stringValue: v };
+                        else if (typeof v === 'number') fields[k] = { doubleValue: v };
+                        else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+                        else if (Array.isArray(v)) fields[k] = { arrayValue: { values: v.map(i => ({ stringValue: String(i) })) } };
                     });
+                    fields['timestamp'] = { timestampValue: new Date().toISOString() };
+                    
+                    await fetch(
+                        `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists/${encodeURIComponent(selectedBag)}/items`,
+                        {
+                            method: 'POST',
+                            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fields })
+                        }
+                    );
                 }
                 localStorage.setItem('lastUsedBag_' + uid, selectedBag);
                 saveBtn.innerText = "BAGGED!";

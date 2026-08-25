@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Bagged",
   "version": "1.0.9",
+  "description": "Your personal shopping assistant. Save, organise and share your favourite finds from any store.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -11,14 +12,11 @@
     "<all_urls>"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;"
   },
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
     "128": "icon.png"
   },
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
@@ -45,8 +43,7 @@
         "firebase-app.js",
         "firebase-auth.js",
         "firebase-firestore.js",
-        "icon.png",
-        "Icon.png"
+        "icon.png"
       ],
       "matches": [
         "<all_urls>"

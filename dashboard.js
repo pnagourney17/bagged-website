@@ -325,6 +325,28 @@ async function loadPublicSharedDashboard(uid, bagName) {
     }
 }
 
+// Get the most recent item timestamp from a wishlist's items (returns epoch ms)
+function getLatestTimestamp(items) {
+    if (!items || items.length === 0) return 0;
+    let latest = 0;
+    for (const item of items) {
+        let t = 0;
+        if (item.timestamp) {
+            if (typeof item.timestamp.toMillis === 'function') {
+                t = item.timestamp.toMillis(); // SDK Timestamp
+            } else if (typeof item.timestamp === 'string') {
+                t = new Date(item.timestamp).getTime(); // REST string
+            } else if (typeof item.timestamp === 'number') {
+                t = item.timestamp;
+            } else if (item.timestamp.seconds) {
+                t = item.timestamp.seconds * 1000; // Firestore REST {seconds, nanos}
+            }
+        }
+        if (t > latest) latest = t;
+    }
+    return latest;
+}
+
 async function loadCloudDashboard(user) {
     const container = document.getElementById('bags-container');
     const sharedBagId = getSharedBagId();
@@ -374,18 +396,12 @@ async function loadCloudDashboard(user) {
 
         container.innerHTML = "";
 
-        // Sort by saved order
-        const savedOrder = JSON.parse(localStorage.getItem('bagOrder_' + user.uid) || '[]');
-        if (savedOrder.length > 0) {
-            boardsData.sort((a, b) => {
-                const aIdx = savedOrder.indexOf(a.name);
-                const bIdx = savedOrder.indexOf(b.name);
-                if (aIdx === -1 && bIdx === -1) return 0;
-                if (aIdx === -1) return 1;
-                if (bIdx === -1) return -1;
-                return aIdx - bIdx;
-            });
-        }
+        // Sort wishlists oldest-to-newest by the most recent item added
+        boardsData.sort((a, b) => {
+            const latestA = getLatestTimestamp(a.items);
+            const latestB = getLatestTimestamp(b.items);
+            return latestA - latestB; // oldest first, newest last
+        });
 
         // If viewing a specific bag (shared or clicked), show detail view
         if (sharedBagId) {

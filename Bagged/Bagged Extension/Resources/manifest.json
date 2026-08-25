@@ -15,17 +15,13 @@
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://firestore.googleapis.com https://securetoken.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com;"
   },
   "icons": {
-    "16": "icon.png",
-    "48": "icon.png",
     "128": "icon.png"
   },
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": "icon.png"
   },
   "background": {
-    "scripts": ["background.js"],
     "service_worker": "background.js"
   },
   "content_scripts": [
@@ -47,8 +43,7 @@
         "firebase-app.js",
         "firebase-auth.js",
         "firebase-firestore.js",
-        "icon.png",
-        "Icon.png"
+        "icon.png"
       ],
       "matches": [
         "<all_urls>"
