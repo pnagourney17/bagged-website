@@ -210,58 +210,84 @@ async function handleAuthSubmit(e) {
 window.handleAuthSubmit = handleAuthSubmit;
 
 // ========== PRODUCT SCANNER & APP LOGIC ==========
-function fetchProductFromTab() {
-    if (typeof chrome === 'undefined' || !chrome.tabs) return;
+// Safari/Chrome API compatibility
+const api = (typeof browser !== 'undefined' && browser.tabs) ? browser : (typeof chrome !== 'undefined' ? chrome : null);
 
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        let tab = tabs && tabs[0];
-        if (!tab) {
-            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs2) => {
-                let tab2 = tabs2 && tabs2[0];
-                if (!tab2) {
-                    chrome.tabs.query({ active: true }, (tabs3) => {
-                        if (tabs3 && tabs3[0]) queryTabProduct(tabs3[0]);
-                    });
-                } else {
-                    queryTabProduct(tab2);
-                }
-            });
+async function fetchProductFromTab() {
+    if (!api || !api.tabs) return;
+
+    try {
+        // Try promise-based API first (Safari), fall back to callback (Chrome)
+        let tabs;
+        if (api.tabs.query.constructor.name === 'AsyncFunction' || typeof browser !== 'undefined') {
+            tabs = await api.tabs.query({ active: true, currentWindow: true });
+            if (!tabs || !tabs[0]) tabs = await api.tabs.query({ active: true, lastFocusedWindow: true });
+            if (!tabs || !tabs[0]) tabs = await api.tabs.query({ active: true });
         } else {
-            queryTabProduct(tab);
+            tabs = await new Promise(resolve => {
+                api.tabs.query({ active: true, currentWindow: true }, (t) => {
+                    if (t && t[0]) return resolve(t);
+                    api.tabs.query({ active: true, lastFocusedWindow: true }, (t2) => {
+                        if (t2 && t2[0]) return resolve(t2);
+                        api.tabs.query({ active: true }, (t3) => resolve(t3 || []));
+                    });
+                });
+            });
         }
-    });
-}
 
-function queryTabProduct(tab) {
-    if (!tab || !tab.id) return;
+        const tab = tabs && tabs[0];
+        if (!tab || !tab.id) return;
 
-    // Skip restricted pages where content scripts can't be injected
-    const url = tab.url || '';
-    if (!url.startsWith('http://') && !url.startsWith('https://')) return;
+        const url = tab.url || '';
+        if (!url.startsWith('http://') && !url.startsWith('https://')) return;
 
-    // Inject content.js to guarantee message receiver is ready
-    if (chrome.scripting) {
-        chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content.js']
-        }, () => {
-            if (chrome.runtime.lastError) {
-                console.log("Script inject notice:", chrome.runtime.lastError.message);
-                return;
-            }
-            sendProductMessage(tab.id);
-        });
-    } else {
-        sendProductMessage(tab.id);
+        await queryTabProduct(tab);
+    } catch (e) {
+        console.warn('fetchProductFromTab error:', e);
     }
 }
 
-function sendProductMessage(tabId) {
-    chrome.tabs.sendMessage(tabId, { action: "getProduct" }, (response) => {
-        if (chrome.runtime.lastError || !response) {
-            console.log("Product query response notice:", chrome.runtime.lastError);
-            return;
+async function queryTabProduct(tab) {
+    if (!tab || !tab.id) return;
+
+    // Try to inject content script first
+    try {
+        if (api.scripting && api.scripting.executeScript) {
+            await api.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['content.js']
+            });
         }
+    } catch (e) {
+        console.log("Script inject notice:", e.message || e);
+    }
+
+    // Small delay to let content script initialize
+    await new Promise(r => setTimeout(r, 200));
+    
+    await sendProductMessage(tab.id);
+}
+
+async function sendProductMessage(tabId) {
+    try {
+        let response;
+        if (typeof browser !== 'undefined' && browser.tabs) {
+            // Safari: promise-based
+            response = await browser.tabs.sendMessage(tabId, { action: "getProduct" });
+        } else {
+            // Chrome: callback-based
+            response = await new Promise((resolve) => {
+                chrome.tabs.sendMessage(tabId, { action: "getProduct" }, (resp) => {
+                    if (chrome.runtime.lastError) {
+                        console.log("Product query notice:", chrome.runtime.lastError.message);
+                        resolve(null);
+                    } else {
+                        resolve(resp);
+                    }
+                });
+            });
+        }
+        
         if (response && response.name) {
             const imgEl = document.getElementById('product-img');
             if (imgEl) {
@@ -276,7 +302,9 @@ function sendProductMessage(tabId) {
             if (priceEl) priceEl.innerText = response.price || '';
             window.currentProduct = response;
         }
-    });
+    } catch (e) {
+        console.warn("sendProductMessage error:", e);
+    }
 }
 
 let _loadingBags = false;
@@ -635,7 +663,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (token && uid) {
                 dashUrl += '#token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email) + '&uid=' + encodeURIComponent(uid);
             }
-            chrome.tabs.create({ url: dashUrl });
+            if (api && api.tabs) {
+                api.tabs.create({ url: dashUrl });
+            } else {
+                window.open(dashUrl, '_blank');
+            }
         };
     }
 });

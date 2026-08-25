@@ -1,7 +1,8 @@
 if (!window.baggedScraperLoaded) {
     window.baggedScraperLoaded = true;
 
-    chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    const runtime = (typeof browser !== 'undefined' && browser.runtime) ? browser.runtime : chrome.runtime;
+    runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (request.action === "getProduct") {
             const product = {
                 name: document.title.split('|')[0].split('-')[0].trim(),
