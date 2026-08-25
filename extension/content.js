@@ -75,9 +75,20 @@ if (!window.baggedScraperLoaded) {
             'how to measure', 'fit guide', 'size assistance', 'add to bag', 'add to cart',
             'add to basket', 'add', 'process order', 'buy now', 'checkout',
             'put it in your basket', 'put it in your bag', 'size recommender',
-            'smaller fit', 'larger fit', 'view similar', 'coming soon'
+            'smaller fit', 'larger fit', 'view similar', 'coming soon',
+            // Gender/category terms — not sizes
+            'women', 'men', 'woman', 'man', 'male', 'female', 'unisex',
+            'boys', 'girls', 'boy', 'girl', 'kids', 'baby', 'infant', 'toddler',
+            'petite', 'maternity', 'plus', 'tall', 'regular', 'short',
+            // Navigation / misc
+            'home', 'new', 'sale', 'shop', 'clothing', 'shoes', 'bags',
+            'accessories', 'beauty', 'designers', 'all', 'none',
+            'quantity', 'qty', 'color', 'colour', 'style', 'width',
+            'standard', 'express', 'delivery', 'shipping', 'free',
+            'please select', 'select size', 'choose size', 'pick a size',
+            'select option', 'choose option'
         ];
-        return junkKeywords.some(keyword => lower === keyword || lower.startsWith(keyword) || lower.includes(keyword));
+        return junkKeywords.some(keyword => lower === keyword || lower === keyword + 's');
     }
 
     function extractClothingSizeCode(rawText) {
@@ -99,11 +110,19 @@ if (!window.baggedScraperLoaded) {
     function getSizes() {
         let sizes = [];
 
-        // 0. Check all select elements across luxury & fast-fashion stores
+        // 0. Check size-related select elements across luxury & fast-fashion stores
         const selects = Array.from(document.querySelectorAll('select, [data-qa*="size" i], [class*="size-selector" i], [class*="SizeSelector" i], [class*="select-size" i], [class*="SizeDropdown" i], [name*="size" i]'));
         for (let select of selects) {
             const attrStr = (select.id + ' ' + select.className + ' ' + select.name + ' ' + (select.getAttribute('aria-label') || '') + ' ' + (select.getAttribute('data-qa') || '')).toLowerCase();
-            if (attrStr.includes('size') || attrStr.includes('dimension') || select.tagName === 'SELECT') {
+            // Only process SELECTs that are size-related; skip generic selects (gender, qty, color, etc.)
+            const isSizeRelated = attrStr.includes('size') || attrStr.includes('dimension') || attrStr.includes('taille');
+            if (select.tagName !== 'SELECT' && !isSizeRelated) continue;
+            if (select.tagName === 'SELECT' && !isSizeRelated) {
+                // For generic <select> elements, check if options look like sizes
+                const optTexts = Array.from(select.options).map(o => (o.innerText || '').trim().toLowerCase());
+                const looksLikeSizes = optTexts.some(t => /^(xxs|xs|s|m|l|xl|xxl|xxxl|[0-9]{1,2}(\.[0-9])?|(?:uk|us|eu|fr|it)\s*[0-9]{1,2})$/i.test(t));
+                if (!looksLikeSizes) continue;
+            }
                 let options = [];
                 if (select.tagName === 'SELECT') {
                     options = Array.from(select.options)
@@ -226,6 +245,19 @@ if (!window.baggedScraperLoaded) {
         return [...new Set(sizes)].filter(s => !isJunkSize(s)).slice(0, 20);
     }
 
+    function isJunkColour(txt) {
+        if (!txt || txt.length === 0 || txt.length > 40) return true;
+        const lower = txt.toLowerCase().trim();
+        const junk = [
+            'select', 'choose', 'color', 'colour', 'shade', 'pick',
+            'women', 'men', 'woman', 'man', 'male', 'female', 'unisex',
+            'boys', 'girls', 'kids', 'baby', 'all', 'none', 'n/a',
+            'quantity', 'qty', 'size', 'add', 'buy', 'shop', 'home',
+            'select color', 'select colour', 'choose color', 'choose colour'
+        ];
+        return junk.some(j => lower === j || lower === j + 's');
+    }
+
     function getColours() {
         let colours = [];
         // 1. Check select elements
@@ -235,7 +267,7 @@ if (!window.baggedScraperLoaded) {
             if (attrStr.includes('color') || attrStr.includes('colour') || attrStr.includes('shade')) {
                 const options = Array.from(select.options)
                     .map(opt => opt.innerText.trim())
-                    .filter(txt => txt && !/select|choose/i.test(txt));
+                    .filter(txt => !isJunkColour(txt));
                 if (options.length > 0) {
                     colours = options;
                     break;
