@@ -250,7 +250,73 @@ async function fetchProductFromTab() {
 async function queryTabProduct(tab) {
     if (!tab || !tab.id) return;
 
-    // Try to inject content script first
+    const isSafari = typeof browser !== 'undefined' && browser.tabs;
+
+    // Safari: use executeScript to scrape directly (message passing is unreliable)
+    if (isSafari && api.scripting && api.scripting.executeScript) {
+        try {
+            const results = await api.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    // Inline scraping function
+                    const ogImage = document.querySelector('meta[property="og:image"]');
+                    const image = ogImage ? ogImage.content : '';
+                    
+                    const ogTitle = document.querySelector('meta[property="og:title"]');
+                    let name = ogTitle ? ogTitle.content : document.title.split('|')[0].split('-')[0].trim();
+                    
+                    let price = 'price not found';
+                    const priceSelectors = ['[class*="price" i]', '[id*="price" i]', '.amount', '.money',
+                        'meta[property="og:price:amount"]', 'meta[name="twitter:data1"]'];
+                    for (let sel of priceSelectors) {
+                        const el = document.querySelector(sel);
+                        if (el) {
+                            const rawText = (el.content || el.innerText || el.textContent || '').replace(/[Ââ]/g, '').trim();
+                            const match = rawText.match(/([$£€¥₹]\s*[\d,]+(?:\.\d{2})?|[\d,]+(?:\.\d{2})?\s*(?:GBP|USD|EUR|AUD|CAD))/i);
+                            if (match) { price = match[0].trim(); break; }
+                            else if (rawText && rawText.match(/\d/)) { price = rawText; break; }
+                        }
+                    }
+
+                    // Get sizes from size-related selects or buttons
+                    let sizes = [];
+                    const sizeJunk = ['select','size','choose','women','men','woman','man','male','female',
+                        'unisex','boys','girls','kids','quantity','color','colour','add','buy','home'];
+                    const sizeSelects = document.querySelectorAll('select[name*="size" i], select[class*="size" i], select[id*="size" i], [class*="size-selector" i] select');
+                    for (let sel of sizeSelects) {
+                        sizes = Array.from(sel.options).map(o => o.innerText.trim()).filter(t => t && !sizeJunk.includes(t.toLowerCase()));
+                        if (sizes.length > 0) break;
+                    }
+                    if (sizes.length === 0) {
+                        const sizeEls = document.querySelectorAll('[class*="size-selector"] li, [class*="size-selector"] button, [class*="SizeSelector"] button');
+                        sizes = Array.from(sizeEls).map(e => e.innerText.trim()).filter(t => t && t.length < 20 && !sizeJunk.includes(t.toLowerCase()));
+                    }
+
+                    return {
+                        name: name,
+                        brand: window.location.hostname.replace('www.', ''),
+                        price: price,
+                        image: image && image.startsWith('//') ? 'https:' + image : image,
+                        url: window.location.href,
+                        sizes: [...new Set(sizes)].slice(0, 20),
+                        colors: [],
+                        activeSize: '',
+                        activeColor: ''
+                    };
+                }
+            });
+            
+            const response = results && results[0] && results[0].result;
+            if (response && response.name) {
+                displayProduct(response);
+                return;
+            }
+        } catch (e) {
+            console.warn('Safari executeScript scrape failed:', e);
+        }
+    }
+
+    // Chrome / fallback: inject content.js and use message passing
     try {
         if (api.scripting && api.scripting.executeScript) {
             await api.scripting.executeScript({
@@ -262,20 +328,31 @@ async function queryTabProduct(tab) {
         console.log("Script inject notice:", e.message || e);
     }
 
-    // Small delay to let content script initialize
     await new Promise(r => setTimeout(r, 200));
-    
     await sendProductMessage(tab.id);
+}
+
+function displayProduct(response) {
+    const imgEl = document.getElementById('product-img');
+    if (imgEl) {
+        imgEl.src = response.image || '';
+        imgEl.style.display = response.image ? "block" : "none";
+    }
+    const brandEl = document.getElementById('product-brand');
+    if (brandEl) brandEl.innerText = (response.brand || "").toLowerCase();
+    const nameEl = document.getElementById('product-name');
+    if (nameEl) nameEl.innerText = toProperCase(response.name);
+    const priceEl = document.getElementById('product-price');
+    if (priceEl) priceEl.innerText = response.price || '';
+    window.currentProduct = response;
 }
 
 async function sendProductMessage(tabId) {
     try {
         let response;
         if (typeof browser !== 'undefined' && browser.tabs) {
-            // Safari: promise-based
             response = await browser.tabs.sendMessage(tabId, { action: "getProduct" });
         } else {
-            // Chrome: callback-based
             response = await new Promise((resolve) => {
                 chrome.tabs.sendMessage(tabId, { action: "getProduct" }, (resp) => {
                     if (chrome.runtime.lastError) {
@@ -289,18 +366,7 @@ async function sendProductMessage(tabId) {
         }
         
         if (response && response.name) {
-            const imgEl = document.getElementById('product-img');
-            if (imgEl) {
-                imgEl.src = response.image || '';
-                imgEl.style.display = response.image ? "block" : "none";
-            }
-            const brandEl = document.getElementById('product-brand');
-            if (brandEl) brandEl.innerText = (response.brand || "").toLowerCase();
-            const nameEl = document.getElementById('product-name');
-            if (nameEl) nameEl.innerText = toProperCase(response.name);
-            const priceEl = document.getElementById('product-price');
-            if (priceEl) priceEl.innerText = response.price || '';
-            window.currentProduct = response;
+            displayProduct(response);
         }
     } catch (e) {
         console.warn("sendProductMessage error:", e);
