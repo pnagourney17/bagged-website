@@ -235,6 +235,27 @@ function saveCheckoutCartToStorage() {
 // Initialize persisted cart on load
 loadCheckoutCartFromStorage();
 
+// ========== AFFILIATE LINK WRAPPER ==========
+// Configure your affiliate networks here. When you join an affiliate program,
+// update this function to wrap URLs with your affiliate tracking.
+// Supported: Skimlinks, ShareASale, Awin, CJ, Rakuten, or custom.
+function getAffiliateUrl(originalUrl) {
+    if (!originalUrl || originalUrl === '#') return originalUrl;
+    
+    // OPTION 1: Skimlinks (uncomment when you have a publisher ID)
+    // return `https://go.skimresources.com/?id=YOUR_PUBLISHER_ID&url=${encodeURIComponent(originalUrl)}`;
+    
+    // OPTION 2: Awin (uncomment when you have a publisher ID)
+    // return `https://www.awin1.com/cread.php?awinmid=YOUR_MERCHANT_ID&awinaffid=YOUR_AFF_ID&ued=${encodeURIComponent(originalUrl)}`;
+    
+    // OPTION 3: Custom affiliate parameter (some stores accept ?ref=bagged or &tag=bagged)
+    // const separator = originalUrl.includes('?') ? '&' : '?';
+    // return originalUrl + separator + 'ref=bagged';
+    
+    // Default: pass through original URL (no affiliate tracking yet)
+    return originalUrl;
+}
+
 function updateCartDropdown() {
     saveCheckoutCartToStorage();
     const cartItems = document.getElementById('cart-items');
@@ -243,15 +264,17 @@ function updateCartDropdown() {
 
     if (!cartItems) return;
 
-    cartCount.textContent = checkoutCart.length;
+    if (cartCount) cartCount.textContent = checkoutCart.length;
 
     if (checkoutCart.length === 0) {
         cartItems.innerHTML = '<p style="color: #888; font-size: 12px; text-transform: lowercase; margin: 0;">no items in checkout</p>';
-        checkoutBtn.style.opacity = '0.5';
+        if (checkoutBtn) checkoutBtn.style.opacity = '0.5';
     } else {
         cartItems.innerHTML = checkoutCart.map((item, index) => `
             <div style="display: flex; gap: 12px; align-items: center; padding: 10px 0; ${index > 0 ? 'border-top: 1px solid #eee;' : ''}">
-                <img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; background: #f5f5f5;">
+                <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex-shrink: 0;">
+                    <img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; background: #f5f5f5; border-radius: 4px;">
+                </a>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 11px; color: #888; text-transform: lowercase;">${item.brand}</div>
                     <div style="font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
@@ -259,10 +282,14 @@ function updateCartDropdown() {
                         <span>${cleanPrice(item.price)}</span>
                         ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
                     </div>
+                    <div style="display: flex; gap: 6px; margin-top: 6px;">
+                        <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex: 1; background: #000; color: #fff; text-decoration: none; padding: 5px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Shop Now</a>
+                        <button onclick="removeFromCart('${item.id}')" style="background: none; border: 1px solid #ddd; border-radius: 3px; padding: 5px 8px; cursor: pointer; font-size: 9px; color: #888;">✕</button>
+                    </div>
                 </div>
             </div>
         `).join('');
-        checkoutBtn.style.opacity = '1';
+        if (checkoutBtn) checkoutBtn.style.opacity = '1';
     }
 }
 
@@ -274,7 +301,7 @@ function removeFromCart(itemId) {
         updateCartDropdown();
         const btn = document.querySelector(`.add-checkout-btn[data-id="${itemId}"]`);
         if (btn) {
-            btn.textContent = 'Add to Checkout';
+            btn.textContent = 'Add to Cart';
             btn.style.background = '#000';
         }
     }
@@ -667,7 +694,12 @@ function setupCartWidget() {
     if (checkoutAllBtn) {
         checkoutAllBtn.onclick = () => {
             if (checkoutCart.length === 0) return;
-            openUnifiedCheckoutModal();
+            // Open each retailer's product page in a new tab (with affiliate links)
+            checkoutCart.forEach(item => {
+                if (item.url && item.url !== '#') {
+                    window.open(getAffiliateUrl(item.url), '_blank');
+                }
+            });
         };
     }
 }
@@ -1196,7 +1228,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     ` : '';
 
     const isInCart = checkoutCart.some(cartItem => cartItem.id === itemId);
-    const checkoutBtnText = isInCart ? 'Added!' : 'Add to Checkout';
+    const checkoutBtnText = isInCart ? 'Added!' : 'Add to Cart';
     const checkoutBtnBg = isInCart ? '#27ae60' : '#000';
 
     card.innerHTML = `
@@ -1272,7 +1304,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             btn.style.background = '#27ae60';
             btn.style.borderColor = '#27ae60';
         } else {
-            btn.textContent = 'Add to Checkout';
+            btn.textContent = 'Add to Cart';
             btn.style.background = '#000';
             btn.style.borderColor = '#000';
         }
