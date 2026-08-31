@@ -411,11 +411,11 @@ async function loadCloudDashboard(user) {
 
         container.innerHTML = "";
 
-        // Sort wishlists oldest-to-newest by the most recent item added
+        // Sort wishlists by most recently added item first (most active at top)
         boardsData.sort((a, b) => {
             const latestA = getLatestTimestamp(a.items);
             const latestB = getLatestTimestamp(b.items);
-            return latestA - latestB; // oldest first, newest last
+            return latestB - latestA; // newest first, oldest last
         });
 
         // If viewing a specific bag (shared or clicked), show detail view
