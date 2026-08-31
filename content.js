@@ -124,23 +124,22 @@ if (!window.baggedScraperLoaded) {
                 const looksLikeSizes = optTexts.some(t => /^(xxs|xs|s|m|l|xl|xxl|xxxl|[0-9]{1,2}(\.[0-9])?|(?:uk|us|eu|fr|it)\s*[0-9]{1,2})$/i.test(t));
                 if (!looksLikeSizes) continue;
             }
-                let options = [];
-                if (select.tagName === 'SELECT') {
-                    options = Array.from(select.options)
-                        .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
-                        .map(txt => extractClothingSizeCode(txt) || txt)
-                        .filter(txt => !isJunkSize(txt));
-                } else {
-                    const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
-                    options = Array.from(optEls)
-                        .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
-                        .map(txt => extractClothingSizeCode(txt) || txt)
-                        .filter(txt => !isJunkSize(txt));
-                }
-                if (options.length > 0) {
-                    sizes = options;
-                    break;
-                }
+            let options = [];
+            if (select.tagName === 'SELECT') {
+                options = Array.from(select.options)
+                    .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
+                    .map(txt => extractClothingSizeCode(txt) || txt)
+                    .filter(txt => !isJunkSize(txt));
+            } else {
+                const optEls = select.querySelectorAll('option, [role="option"], li, button, span[class*="size"]');
+                options = Array.from(optEls)
+                    .map(opt => (opt.innerText || opt.textContent || '').replace(/\s+/g, ' ').trim())
+                    .map(txt => extractClothingSizeCode(txt) || txt)
+                    .filter(txt => !isJunkSize(txt));
+            }
+            if (options.length > 0) {
+                sizes = options;
+                break;
             }
         }
 
