@@ -15,11 +15,8 @@ const auth = firebase.auth();
 
 // ========== AUTH STATE ==========
 auth.onAuthStateChanged((user) => {
-    // If user is already logged in and visits landing page, redirect to dashboard
-    // unless they clicked the 'about' button which passes ?view=about
-    if (user && !window.location.search.includes('view=about')) {
-        window.location.href = 'dashboard.html';
-    }
+    // Landing page always stays on landing page — no redirect to dashboard
+    // Dashboard is accessed separately via dashboard.html
 });
 // ========== ABOUT / WHAT'S BAGGED SCROLL ==========
 function checkScrollToWhatsBagged() {
