@@ -236,24 +236,12 @@ function saveCheckoutCartToStorage() {
 loadCheckoutCartFromStorage();
 
 // ========== AFFILIATE LINK WRAPPER ==========
-// Configure your affiliate networks here. When you join an affiliate program,
-// update this function to wrap URLs with your affiliate tracking.
-// Supported: Skimlinks, ShareASale, Awin, CJ, Rakuten, or custom.
+// Skimlinks affiliate tracking (Publisher ID: 308418)
+// The Skimlinks JS on the page auto-converts clicked links.
+// This function handles programmatic redirects (e.g. "Shop All" opening multiple tabs).
 function getAffiliateUrl(originalUrl) {
     if (!originalUrl || originalUrl === '#') return originalUrl;
-    
-    // OPTION 1: Skimlinks (uncomment when you have a publisher ID)
-    // return `https://go.skimresources.com/?id=YOUR_PUBLISHER_ID&url=${encodeURIComponent(originalUrl)}`;
-    
-    // OPTION 2: Awin (uncomment when you have a publisher ID)
-    // return `https://www.awin1.com/cread.php?awinmid=YOUR_MERCHANT_ID&awinaffid=YOUR_AFF_ID&ued=${encodeURIComponent(originalUrl)}`;
-    
-    // OPTION 3: Custom affiliate parameter (some stores accept ?ref=bagged or &tag=bagged)
-    // const separator = originalUrl.includes('?') ? '&' : '?';
-    // return originalUrl + separator + 'ref=bagged';
-    
-    // Default: pass through original URL (no affiliate tracking yet)
-    return originalUrl;
+    return `https://go.skimresources.com/?id=308418&url=${encodeURIComponent(originalUrl)}`;
 }
 
 function updateCartDropdown() {
