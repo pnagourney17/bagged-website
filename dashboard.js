@@ -364,81 +364,89 @@ function getLatestTimestamp(items) {
 
 async function loadCloudDashboard(user) {
     const container = document.getElementById('bags-container');
+    if (!container) return;
+    container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>loading wishlists...</p>";
+
+    const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+    if (!uid) {
+        container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>please sign in to view your bags</p>";
+        return;
+    }
+    console.log('Loading wishlists for user:', uid);
+
+    let boardsData = [];
+
+    // Try SDK with 5-second timeout, fall back to REST API
+    try {
+        const sdkPromise = (async () => {
+            const userWishlists = db.collection('users').doc(uid).collection('wishlists');
+            const wishlistsSnapshot = await userWishlists.get();
+            console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
+            const data = [];
+            for (const wishlistDoc of wishlistsSnapshot.docs) {
+                const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
+                const items = [];
+                itemsSnapshot.forEach(itemDoc => {
+                    items.push({ id: itemDoc.id, ...itemDoc.data() });
+                });
+                items.sort((a, b) => {
+                    const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+                    const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+                    return timeB - timeA;
+                });
+                data.push({ name: wishlistDoc.id, items });
+            }
+            return data;
+        })();
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
+        );
+
+        boardsData = await Promise.race([sdkPromise, timeoutPromise]);
+    } catch (sdkErr) {
+        console.warn('Firestore SDK failed or timed out, using REST API:', sdkErr.message);
+        try {
+            boardsData = await loadCloudDashboardREST(user);
+        } catch (restErr) {
+            console.error('REST API also failed:', restErr);
+            container.innerHTML = "<p style='text-transform: lowercase; color: #d32f2f;'>failed to load wishlists — please try refreshing the page</p>";
+            return;
+        }
+    }
+
+    if (!boardsData || boardsData.length === 0) {
+        container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>your bags are empty - save a product to get started</p>";
+        return;
+    }
+
+    container.innerHTML = "";
+
     const sharedBagId = getSharedBagId();
 
-    try {
-        console.log('Loading wishlists for user:', user.uid);
+    // Sort wishlists by most recently added item first (most active at top)
+    boardsData.sort((a, b) => {
+        const latestA = getLatestTimestamp(a.items);
+        const latestB = getLatestTimestamp(b.items);
+        return latestB - latestA; // newest first, oldest last
+    });
 
-        let boardsData = [];
-
-        // Try SDK with 5-second timeout, fall back to REST API
-        try {
-            const sdkPromise = (async () => {
-                const userWishlists = db.collection('users').doc(user.uid).collection('wishlists');
-                const wishlistsSnapshot = await userWishlists.get();
-                console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
-                const data = [];
-                for (const wishlistDoc of wishlistsSnapshot.docs) {
-                    const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
-                    const items = [];
-                    itemsSnapshot.forEach(itemDoc => {
-                        items.push({ id: itemDoc.id, ...itemDoc.data() });
-                    });
-                    items.sort((a, b) => {
-                        const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
-                        const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
-                        return timeB - timeA;
-                    });
-                    data.push({ name: wishlistDoc.id, items });
-                }
-                return data;
-            })();
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
-            );
-
-            boardsData = await Promise.race([sdkPromise, timeoutPromise]);
-        } catch (sdkErr) {
-            console.warn('Firestore SDK failed or timed out, using REST API:', sdkErr.message);
-            boardsData = await loadCloudDashboardREST(user);
+    // If viewing a specific bag (shared or clicked), show detail view
+    if (sharedBagId) {
+        const board = boardsData.find(b => b.name === sharedBagId);
+        if (board) {
+            renderBoardDetail(container, board, user, true);
+        } else {
+            container.innerHTML = "<p style='color: #888;'>bag not found</p>";
         }
-
-        if (!boardsData || boardsData.length === 0) {
-            container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>your bags are empty - save a product to get started</p>";
-            return;
-        }
-
-        container.innerHTML = "";
-
-        // Sort wishlists by most recently added item first (most active at top)
-        boardsData.sort((a, b) => {
-            const latestA = getLatestTimestamp(a.items);
-            const latestB = getLatestTimestamp(b.items);
-            return latestB - latestA; // newest first, oldest last
-        });
-
-        // If viewing a specific bag (shared or clicked), show detail view
-        if (sharedBagId) {
-            const board = boardsData.find(b => b.name === sharedBagId);
-            if (board) {
-                renderBoardDetail(container, board, user, true);
-            } else {
-                container.innerHTML = "<p style='color: #888;'>bag not found</p>";
-            }
-            return;
-        }
-
-        // Render Pinterest-style board overview
-        renderBoardsOverview(container, boardsData, user);
-
-        // Setup cart toggle
-        setupCartWidget();
-
-    } catch (error) {
-        console.error('Dashboard load error:', error);
-        container.innerHTML = `<p style="color: #d63031; font-size: 13px;">Error loading bags: ${error.message}</p><p style="color: #888; font-size: 12px; margin-top: 8px;">Check Firestore rules and browser console for details.</p>`;
+        return;
     }
+
+    // Render Pinterest-style board overview
+    renderBoardsOverview(container, boardsData, user);
+
+    // Setup cart toggle
+    setupCartWidget();
 }
 
 // REST API fallback for loading dashboard wishlists
