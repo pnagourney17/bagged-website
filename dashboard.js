@@ -1326,7 +1326,31 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             removeBtn.addEventListener('mouseenter', () => { removeBtn.style.background = '#fafafa'; removeBtn.style.borderColor = '#ccc'; });
             removeBtn.addEventListener('mouseleave', () => { removeBtn.style.background = '#fff'; removeBtn.style.borderColor = '#ddd'; });
             removeBtn.onclick = async () => {
-                await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
+                const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+                if (!uid) { alert('Please sign in to remove items.'); return; }
+                
+                try {
+                    // Try Firestore SDK first
+                    if (typeof db !== 'undefined' && db.collection) {
+                        await db.collection('users').doc(uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
+                    } else {
+                        throw new Error('SDK not available');
+                    }
+                } catch (e) {
+                    // REST API fallback
+                    try {
+                        const token = localStorage.getItem('bagged_id_token');
+                        const resp = await fetch(
+                            `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists/${wishlistId}/items/${itemId}`,
+                            { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!resp.ok) throw new Error('Delete failed: ' + resp.status);
+                    } catch (e2) {
+                        console.error('Remove item error:', e2);
+                        alert('Failed to remove item. Please try again.');
+                        return;
+                    }
+                }
                 card.remove();
             };
         }
