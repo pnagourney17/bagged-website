@@ -15,13 +15,22 @@ try { db.settings({ merge: true }); } catch (_) {}
 
 // Helper: get a valid (non-expired) Firebase ID token
 async function getValidToken() {
-    // 1. Try SDK auth (auto-refreshes tokens)
+    // 1. Try SDK auth with 3s timeout (getIdToken can hang in Safari)
     if (auth.currentUser) {
         try {
-            const token = await auth.currentUser.getIdToken(true);
+            const token = await Promise.race([
+                auth.currentUser.getIdToken(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 3000))
+            ]);
             localStorage.setItem('bagged_id_token', token);
+            // Store refresh token if available
+            if (auth.currentUser.refreshToken) {
+                localStorage.setItem('bagged_refresh_token', auth.currentUser.refreshToken);
+            }
             return token;
-        } catch (_) {}
+        } catch (_) {
+            console.warn('getIdToken failed or timed out, trying REST refresh');
+        }
     }
     // 2. Try refreshing via REST API using stored refresh token
     const refreshToken = localStorage.getItem('bagged_refresh_token');
@@ -36,6 +45,7 @@ async function getValidToken() {
             if (data.id_token) {
                 localStorage.setItem('bagged_id_token', data.id_token);
                 if (data.refresh_token) localStorage.setItem('bagged_refresh_token', data.refresh_token);
+                if (data.user_id) localStorage.setItem('bagged_local_id', data.user_id);
                 return data.id_token;
             }
         } catch (_) {}
@@ -124,10 +134,24 @@ gateSubmit.addEventListener('click', async () => {
     }
 
     try {
+        let userCredential;
         if (gateIsSignUp) {
-            await auth.createUserWithEmailAndPassword(email, password);
+            userCredential = await auth.createUserWithEmailAndPassword(email, password);
         } else {
-            await auth.signInWithEmailAndPassword(email, password);
+            userCredential = await auth.signInWithEmailAndPassword(email, password);
+        }
+        // Store tokens for REST fallback (critical for Safari)
+        const u = userCredential.user;
+        if (u) {
+            localStorage.setItem('bagged_local_id', u.uid);
+            if (u.refreshToken) localStorage.setItem('bagged_refresh_token', u.refreshToken);
+            try {
+                const idToken = await Promise.race([
+                    u.getIdToken(),
+                    new Promise((_, rej) => setTimeout(() => rej(), 3000))
+                ]);
+                if (idToken) localStorage.setItem('bagged_id_token', idToken);
+            } catch (_) {}
         }
     } catch (e) {
         console.log('Auth error code:', e.code);
