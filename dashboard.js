@@ -13,6 +13,37 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const db = firebase.firestore();
 try { db.settings({ merge: true }); } catch (_) {}
 
+// Helper: get a valid (non-expired) Firebase ID token
+async function getValidToken() {
+    // 1. Try SDK auth (auto-refreshes tokens)
+    if (auth.currentUser) {
+        try {
+            const token = await auth.currentUser.getIdToken(true);
+            localStorage.setItem('bagged_id_token', token);
+            return token;
+        } catch (_) {}
+    }
+    // 2. Try refreshing via REST API using stored refresh token
+    const refreshToken = localStorage.getItem('bagged_refresh_token');
+    if (refreshToken) {
+        try {
+            const resp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${firebaseConfig.apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+            });
+            const data = await resp.json();
+            if (data.id_token) {
+                localStorage.setItem('bagged_id_token', data.id_token);
+                if (data.refresh_token) localStorage.setItem('bagged_refresh_token', data.refresh_token);
+                return data.id_token;
+            }
+        } catch (_) {}
+    }
+    // 3. Fall back to whatever is stored (may be expired)
+    return localStorage.getItem('bagged_id_token');
+}
+
 function cleanPrice(price) {
     if (!price) return '£0.00';
     let str = String(price).replace(/[Ââ]/g, '').trim();
@@ -451,9 +482,10 @@ async function loadCloudDashboard(user) {
 
 // REST API fallback for loading dashboard wishlists
 async function loadCloudDashboardREST(user) {
-    const token = await user.getIdToken().catch(() => null);
+    const token = await getValidToken() || await user.getIdToken().catch(() => null);
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-    const baseUrl = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${user.uid}/wishlists`;
+    const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+    const baseUrl = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`;
     
     const res = await fetch(baseUrl, { headers });
     const data = await res.json();
@@ -1347,7 +1379,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
                 } catch (e) {
                     // REST API fallback
                     try {
-                        const token = localStorage.getItem('bagged_id_token');
+                        const token = await getValidToken();
                         const resp = await fetch(
                             `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists/${wishlistId}/items/${itemId}`,
                             { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
