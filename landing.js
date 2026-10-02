@@ -194,7 +194,8 @@ authForm.addEventListener('submit', (e) => {
     if (authMode === 'login') {
         auth.signInWithEmailAndPassword(email, password)
             .then(() => {
-                // onAuthStateChanged will handle the redirect
+                // Redirect to dashboard after explicit login
+                window.location.href = 'dashboard.html';
             })
             .catch(error => {
                 console.error("Login err:", error);
@@ -228,7 +229,8 @@ authForm.addEventListener('submit', (e) => {
                 authError.style.color = '#27ae60';
                 authError.innerText = `Welcome, ${firstName}! Check your inbox to verify your email.`;
 
-                // onAuthStateChanged will redirect after a short delay
+                // Redirect to dashboard after a short delay
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
             })
             .catch(error => {
                 console.error("Signup err:", error);
