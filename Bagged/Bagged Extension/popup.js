@@ -607,10 +607,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const signOutBtn = document.getElementById('sign-out-btn');
     if (signOutBtn) {
         signOutBtn.addEventListener('click', () => {
-            if (auth) auth.signOut();
+            if (auth) {
+                try { auth.signOut(); } catch (_) {}
+            }
             localStorage.removeItem('bagged_user_email');
+            localStorage.removeItem('bagged_email');
             localStorage.removeItem('bagged_id_token');
             localStorage.removeItem('bagged_local_id');
+            localStorage.removeItem('bagged_refresh_token');
             checkAuthState();
         });
     }

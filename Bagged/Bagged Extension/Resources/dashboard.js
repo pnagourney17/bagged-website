@@ -13,6 +13,47 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const db = firebase.firestore();
 try { db.settings({ merge: true }); } catch (_) {}
 
+// Helper: get a valid (non-expired) Firebase ID token
+async function getValidToken() {
+    // 1. Try SDK auth with 3s timeout (getIdToken can hang in Safari)
+    if (auth.currentUser) {
+        try {
+            const token = await Promise.race([
+                auth.currentUser.getIdToken(true),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 3000))
+            ]);
+            localStorage.setItem('bagged_id_token', token);
+            // Store refresh token if available
+            if (auth.currentUser.refreshToken) {
+                localStorage.setItem('bagged_refresh_token', auth.currentUser.refreshToken);
+            }
+            return token;
+        } catch (_) {
+            console.warn('getIdToken failed or timed out, trying REST refresh');
+        }
+    }
+    // 2. Try refreshing via REST API using stored refresh token
+    const refreshToken = localStorage.getItem('bagged_refresh_token');
+    if (refreshToken) {
+        try {
+            const resp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${firebaseConfig.apiKey}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+            });
+            const data = await resp.json();
+            if (data.id_token) {
+                localStorage.setItem('bagged_id_token', data.id_token);
+                if (data.refresh_token) localStorage.setItem('bagged_refresh_token', data.refresh_token);
+                if (data.user_id) localStorage.setItem('bagged_local_id', data.user_id);
+                return data.id_token;
+            }
+        } catch (_) {}
+    }
+    // 3. Fall back to whatever is stored (may be expired)
+    return localStorage.getItem('bagged_id_token');
+}
+
 function cleanPrice(price) {
     if (!price) return '£0.00';
     let str = String(price).replace(/[Ââ]/g, '').trim();
@@ -93,10 +134,24 @@ gateSubmit.addEventListener('click', async () => {
     }
 
     try {
+        let userCredential;
         if (gateIsSignUp) {
-            await auth.createUserWithEmailAndPassword(email, password);
+            userCredential = await auth.createUserWithEmailAndPassword(email, password);
         } else {
-            await auth.signInWithEmailAndPassword(email, password);
+            userCredential = await auth.signInWithEmailAndPassword(email, password);
+        }
+        // Store tokens for REST fallback (critical for Safari)
+        const u = userCredential.user;
+        if (u) {
+            localStorage.setItem('bagged_local_id', u.uid);
+            if (u.refreshToken) localStorage.setItem('bagged_refresh_token', u.refreshToken);
+            try {
+                const idToken = await Promise.race([
+                    u.getIdToken(),
+                    new Promise((_, rej) => setTimeout(() => rej(), 3000))
+                ]);
+                if (idToken) localStorage.setItem('bagged_id_token', idToken);
+            } catch (_) {}
         }
     } catch (e) {
         console.log('Auth error code:', e.code);
@@ -235,6 +290,15 @@ function saveCheckoutCartToStorage() {
 // Initialize persisted cart on load
 loadCheckoutCartFromStorage();
 
+// ========== AFFILIATE LINK WRAPPER ==========
+// Skimlinks affiliate tracking (Publisher ID: 308418)
+// The Skimlinks JS on the page auto-converts clicked links.
+// This function handles programmatic redirects (e.g. "Shop All" opening multiple tabs).
+function getAffiliateUrl(originalUrl) {
+    if (!originalUrl || originalUrl === '#') return originalUrl;
+    return `https://go.skimresources.com/?id=308418&url=${encodeURIComponent(originalUrl)}`;
+}
+
 function updateCartDropdown() {
     saveCheckoutCartToStorage();
     const cartItems = document.getElementById('cart-items');
@@ -243,15 +307,17 @@ function updateCartDropdown() {
 
     if (!cartItems) return;
 
-    cartCount.textContent = checkoutCart.length;
+    if (cartCount) cartCount.textContent = checkoutCart.length;
 
     if (checkoutCart.length === 0) {
         cartItems.innerHTML = '<p style="color: #888; font-size: 12px; text-transform: lowercase; margin: 0;">no items in checkout</p>';
-        checkoutBtn.style.opacity = '0.5';
+        if (checkoutBtn) checkoutBtn.style.opacity = '0.5';
     } else {
         cartItems.innerHTML = checkoutCart.map((item, index) => `
             <div style="display: flex; gap: 12px; align-items: center; padding: 10px 0; ${index > 0 ? 'border-top: 1px solid #eee;' : ''}">
-                <img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; background: #f5f5f5;">
+                <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex-shrink: 0;">
+                    <img src="${item.image}" style="width: 50px; height: 50px; object-fit: cover; background: #f5f5f5; border-radius: 4px;">
+                </a>
                 <div style="flex: 1; min-width: 0;">
                     <div style="font-size: 11px; color: #888; text-transform: lowercase;">${item.brand}</div>
                     <div style="font-size: 12px; font-weight: 500; text-transform: capitalize; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.name}</div>
@@ -259,10 +325,14 @@ function updateCartDropdown() {
                         <span>${cleanPrice(item.price)}</span>
                         ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
                     </div>
+                    <div style="display: flex; gap: 6px; margin-top: 6px;">
+                        <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex: 1; background: #000; color: #fff; text-decoration: none; padding: 5px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Shop Now</a>
+                        <button onclick="removeFromCart('${item.id}')" style="background: none; border: 1px solid #ddd; border-radius: 3px; padding: 5px 8px; cursor: pointer; font-size: 9px; color: #888;">✕</button>
+                    </div>
                 </div>
             </div>
         `).join('');
-        checkoutBtn.style.opacity = '1';
+        if (checkoutBtn) checkoutBtn.style.opacity = '1';
     }
 }
 
@@ -274,7 +344,7 @@ function removeFromCart(itemId) {
         updateCartDropdown();
         const btn = document.querySelector(`.add-checkout-btn[data-id="${itemId}"]`);
         if (btn) {
-            btn.textContent = 'Add to Checkout';
+            btn.textContent = 'Add to Cart';
             btn.style.background = '#000';
         }
     }
@@ -325,96 +395,121 @@ async function loadPublicSharedDashboard(uid, bagName) {
     }
 }
 
+// Get the most recent item timestamp from a wishlist's items (returns epoch ms)
+function getLatestTimestamp(items) {
+    if (!items || items.length === 0) return 0;
+    let latest = 0;
+    for (const item of items) {
+        let t = 0;
+        if (item.timestamp) {
+            if (typeof item.timestamp.toMillis === 'function') {
+                t = item.timestamp.toMillis(); // SDK Timestamp
+            } else if (typeof item.timestamp === 'string') {
+                t = new Date(item.timestamp).getTime(); // REST string
+            } else if (typeof item.timestamp === 'number') {
+                t = item.timestamp;
+            } else if (item.timestamp.seconds) {
+                t = item.timestamp.seconds * 1000; // Firestore REST {seconds, nanos}
+            }
+        }
+        if (t > latest) latest = t;
+    }
+    return latest;
+}
+
 async function loadCloudDashboard(user) {
     const container = document.getElementById('bags-container');
+    if (!container) return;
+    container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>loading wishlists...</p>";
+
+    const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+    if (!uid) {
+        container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>please sign in to view your bags</p>";
+        return;
+    }
+    console.log('Loading wishlists for user:', uid);
+
+    let boardsData = [];
+
+    // Try SDK with 5-second timeout, fall back to REST API
+    try {
+        const sdkPromise = (async () => {
+            const userWishlists = db.collection('users').doc(uid).collection('wishlists');
+            const wishlistsSnapshot = await userWishlists.get();
+            console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
+            const data = [];
+            for (const wishlistDoc of wishlistsSnapshot.docs) {
+                const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
+                const items = [];
+                itemsSnapshot.forEach(itemDoc => {
+                    items.push({ id: itemDoc.id, ...itemDoc.data() });
+                });
+                items.sort((a, b) => {
+                    const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+                    const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+                    return timeB - timeA;
+                });
+                data.push({ name: wishlistDoc.id, items });
+            }
+            return data;
+        })();
+
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
+        );
+
+        boardsData = await Promise.race([sdkPromise, timeoutPromise]);
+    } catch (sdkErr) {
+        console.warn('Firestore SDK failed or timed out, using REST API:', sdkErr.message);
+        try {
+            boardsData = await loadCloudDashboardREST(user);
+        } catch (restErr) {
+            console.error('REST API also failed:', restErr);
+            container.innerHTML = "<p style='text-transform: lowercase; color: #d32f2f;'>failed to load wishlists — please try refreshing the page</p>";
+            return;
+        }
+    }
+
+    if (!boardsData || boardsData.length === 0) {
+        container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>your bags are empty - save a product to get started</p>";
+        return;
+    }
+
+    container.innerHTML = "";
+
     const sharedBagId = getSharedBagId();
 
-    try {
-        console.log('Loading wishlists for user:', user.uid);
+    // Sort wishlists by most recently added item first (most active at top)
+    boardsData.sort((a, b) => {
+        const latestA = getLatestTimestamp(a.items);
+        const latestB = getLatestTimestamp(b.items);
+        return latestB - latestA; // newest first, oldest last
+    });
 
-        let boardsData = [];
-
-        // Try SDK with 5-second timeout, fall back to REST API
-        try {
-            const sdkPromise = (async () => {
-                const userWishlists = db.collection('users').doc(user.uid).collection('wishlists');
-                const wishlistsSnapshot = await userWishlists.get();
-                console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
-                const data = [];
-                for (const wishlistDoc of wishlistsSnapshot.docs) {
-                    const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
-                    const items = [];
-                    itemsSnapshot.forEach(itemDoc => {
-                        items.push({ id: itemDoc.id, ...itemDoc.data() });
-                    });
-                    items.sort((a, b) => {
-                        const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
-                        const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
-                        return timeB - timeA;
-                    });
-                    data.push({ name: wishlistDoc.id, items });
-                }
-                return data;
-            })();
-
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
-            );
-
-            boardsData = await Promise.race([sdkPromise, timeoutPromise]);
-        } catch (sdkErr) {
-            console.warn('Firestore SDK failed or timed out, using REST API:', sdkErr.message);
-            boardsData = await loadCloudDashboardREST(user);
+    // If viewing a specific bag (shared or clicked), show detail view
+    if (sharedBagId) {
+        const board = boardsData.find(b => b.name === sharedBagId);
+        if (board) {
+            renderBoardDetail(container, board, user, true);
+        } else {
+            container.innerHTML = "<p style='color: #888;'>bag not found</p>";
         }
-
-        if (!boardsData || boardsData.length === 0) {
-            container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>your bags are empty - save a product to get started</p>";
-            return;
-        }
-
-        container.innerHTML = "";
-
-        // Sort by saved order
-        const savedOrder = JSON.parse(localStorage.getItem('bagOrder_' + user.uid) || '[]');
-        if (savedOrder.length > 0) {
-            boardsData.sort((a, b) => {
-                const aIdx = savedOrder.indexOf(a.name);
-                const bIdx = savedOrder.indexOf(b.name);
-                if (aIdx === -1 && bIdx === -1) return 0;
-                if (aIdx === -1) return 1;
-                if (bIdx === -1) return -1;
-                return aIdx - bIdx;
-            });
-        }
-
-        // If viewing a specific bag (shared or clicked), show detail view
-        if (sharedBagId) {
-            const board = boardsData.find(b => b.name === sharedBagId);
-            if (board) {
-                renderBoardDetail(container, board, user, true);
-            } else {
-                container.innerHTML = "<p style='color: #888;'>bag not found</p>";
-            }
-            return;
-        }
-
-        // Render Pinterest-style board overview
-        renderBoardsOverview(container, boardsData, user);
-
-        // Setup cart toggle
-        setupCartWidget();
-
-    } catch (error) {
-        console.error('Dashboard load error:', error);
-        container.innerHTML = `<p style="color: #d63031; font-size: 13px;">Error loading bags: ${error.message}</p><p style="color: #888; font-size: 12px; margin-top: 8px;">Check Firestore rules and browser console for details.</p>`;
+        return;
     }
+
+    // Render Pinterest-style board overview
+    renderBoardsOverview(container, boardsData, user);
+
+    // Setup cart toggle
+    setupCartWidget();
 }
 
 // REST API fallback for loading dashboard wishlists
 async function loadCloudDashboardREST(user) {
-    const token = await user.getIdToken().catch(() => null);
+    const token = await getValidToken() || await user.getIdToken().catch(() => null);
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-    const baseUrl = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${user.uid}/wishlists`;
+    const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+    const baseUrl = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`;
     
     const res = await fetch(baseUrl, { headers });
     const data = await res.json();
@@ -651,7 +746,12 @@ function setupCartWidget() {
     if (checkoutAllBtn) {
         checkoutAllBtn.onclick = () => {
             if (checkoutCart.length === 0) return;
-            openUnifiedCheckoutModal();
+            // Open each retailer's product page in a new tab (with affiliate links)
+            checkoutCart.forEach(item => {
+                if (item.url && item.url !== '#') {
+                    window.open(getAffiliateUrl(item.url), '_blank');
+                }
+            });
         };
     }
 }
@@ -1180,7 +1280,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
     ` : '';
 
     const isInCart = checkoutCart.some(cartItem => cartItem.id === itemId);
-    const checkoutBtnText = isInCart ? 'Added!' : 'Add to Checkout';
+    const checkoutBtnText = isInCart ? 'Added!' : 'Add to Cart';
     const checkoutBtnBg = isInCart ? '#27ae60' : '#000';
 
     card.innerHTML = `
@@ -1256,7 +1356,7 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             btn.style.background = '#27ae60';
             btn.style.borderColor = '#27ae60';
         } else {
-            btn.textContent = 'Add to Checkout';
+            btn.textContent = 'Add to Cart';
             btn.style.background = '#000';
             btn.style.borderColor = '#000';
         }
@@ -1290,7 +1390,31 @@ function createCard(item, wishlistId, itemId, isSharedView = false, user) {
             removeBtn.addEventListener('mouseenter', () => { removeBtn.style.background = '#fafafa'; removeBtn.style.borderColor = '#ccc'; });
             removeBtn.addEventListener('mouseleave', () => { removeBtn.style.background = '#fff'; removeBtn.style.borderColor = '#ddd'; });
             removeBtn.onclick = async () => {
-                await db.collection('users').doc(user.uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
+                const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
+                if (!uid) { alert('Please sign in to remove items.'); return; }
+                
+                try {
+                    // Try Firestore SDK first
+                    if (typeof db !== 'undefined' && db.collection) {
+                        await db.collection('users').doc(uid).collection('wishlists').doc(wishlistId).collection('items').doc(itemId).delete();
+                    } else {
+                        throw new Error('SDK not available');
+                    }
+                } catch (e) {
+                    // REST API fallback
+                    try {
+                        const token = await getValidToken();
+                        const resp = await fetch(
+                            `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists/${wishlistId}/items/${itemId}`,
+                            { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
+                        );
+                        if (!resp.ok) throw new Error('Delete failed: ' + resp.status);
+                    } catch (e2) {
+                        console.error('Remove item error:', e2);
+                        alert('Failed to remove item. Please try again.');
+                        return;
+                    }
+                }
                 card.remove();
             };
         }
@@ -1442,20 +1566,44 @@ bagModalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitCreateBtn.click();
 });
 
-document.getElementById('sidebar-signout').addEventListener('click', (e) => {
-    e.preventDefault();
-    auth.signOut().then(() => {
-        // Smart redirect: if inside the Chrome Extension, go to landing.html
-        // If on the live web, simply go back to the root domain.
+const signoutBtn = document.getElementById('sidebar-signout');
+if (signoutBtn) {
+    signoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // 1. Immediately wipe all local auth state
+        localStorage.removeItem('bagged_local_id');
+        localStorage.removeItem('bagged_id_token');
+        localStorage.removeItem('bagged_refresh_token');
+        localStorage.removeItem('bagged_user_email');
+        localStorage.removeItem('bagged_email');
+        try { sessionStorage.clear(); } catch (_) {}
+
+        // 2. Hide dashboard and show login gate immediately
+        if (typeof sidebar !== 'undefined' && sidebar) sidebar.style.display = 'none';
+        if (typeof mainContent !== 'undefined' && mainContent) mainContent.style.display = 'none';
+        if (typeof loginGate !== 'undefined' && loginGate) loginGate.style.display = 'flex';
+
+        // 3. Attempt Firebase SDK signOut with a fast 300ms timeout so Safari never hangs
+        try {
+            if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                await Promise.race([
+                    auth.signOut(),
+                    new Promise(res => setTimeout(res, 300))
+                ]);
+            }
+        } catch (err) {
+            console.warn("Signout error:", err);
+        }
+
+        // 4. Redirect to landing.html
         if (window.location.protocol.includes('chrome-extension')) {
             window.location.href = 'landing.html';
         } else {
-            window.location.href = '/';
+            window.location.href = '/landing.html';
         }
-    }).catch((error) => {
-        console.error("Error signing out:", error);
     });
-});
+}
 
 // ========== DISCOVER (AI RECOMMENDATIONS) ==========
 const navHome = document.querySelector('.sidebar-nav a[href="dashboard.html"]'); 

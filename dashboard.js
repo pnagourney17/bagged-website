@@ -1566,20 +1566,44 @@ bagModalInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitCreateBtn.click();
 });
 
-document.getElementById('sidebar-signout').addEventListener('click', (e) => {
-    e.preventDefault();
-    auth.signOut().then(() => {
-        // Smart redirect: if inside the Chrome Extension, go to landing.html
-        // If on the live web, simply go back to the root domain.
+const signoutBtn = document.getElementById('sidebar-signout');
+if (signoutBtn) {
+    signoutBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // 1. Immediately wipe all local auth state
+        localStorage.removeItem('bagged_local_id');
+        localStorage.removeItem('bagged_id_token');
+        localStorage.removeItem('bagged_refresh_token');
+        localStorage.removeItem('bagged_user_email');
+        localStorage.removeItem('bagged_email');
+        try { sessionStorage.clear(); } catch (_) {}
+
+        // 2. Hide dashboard and show login gate immediately
+        if (typeof sidebar !== 'undefined' && sidebar) sidebar.style.display = 'none';
+        if (typeof mainContent !== 'undefined' && mainContent) mainContent.style.display = 'none';
+        if (typeof loginGate !== 'undefined' && loginGate) loginGate.style.display = 'flex';
+
+        // 3. Attempt Firebase SDK signOut with a fast 300ms timeout so Safari never hangs
+        try {
+            if (typeof auth !== 'undefined' && auth && auth.signOut) {
+                await Promise.race([
+                    auth.signOut(),
+                    new Promise(res => setTimeout(res, 300))
+                ]);
+            }
+        } catch (err) {
+            console.warn("Signout error:", err);
+        }
+
+        // 4. Redirect to landing.html
         if (window.location.protocol.includes('chrome-extension')) {
             window.location.href = 'landing.html';
         } else {
-            window.location.href = '/';
+            window.location.href = '/landing.html';
         }
-    }).catch((error) => {
-        console.error("Error signing out:", error);
     });
-});
+}
 
 // ========== DISCOVER (AI RECOMMENDATIONS) ==========
 const navHome = document.querySelector('.sidebar-nav a[href="dashboard.html"]'); 
