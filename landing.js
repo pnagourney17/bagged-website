@@ -192,17 +192,63 @@ authForm.addEventListener('submit', (e) => {
     authSubmitBtn.disabled = true;
 
     if (authMode === 'login') {
-        auth.signInWithEmailAndPassword(email, password)
-            .then(() => {
-                // Redirect to dashboard after explicit login
-                window.location.href = 'dashboard.html';
-            })
-            .catch(error => {
+        const doRestLogin = async () => {
+            try {
+                const resp = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, returnSecureToken: true })
+                });
+                const data = await resp.json();
+                if (data.error) {
+                    const errCode = data.error.message || data.error.code;
+                    authError.innerHTML = friendlyError(errCode);
+                    authSubmitBtn.innerText = oldText;
+                    authSubmitBtn.disabled = false;
+                } else {
+                    localStorage.setItem('bagged_local_id', data.localId);
+                    localStorage.setItem('bagged_user_email', data.email || email);
+                    localStorage.setItem('bagged_email', data.email || email);
+                    localStorage.setItem('bagged_id_token', data.idToken);
+                    if (data.refreshToken) localStorage.setItem('bagged_refresh_token', data.refreshToken);
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (err) {
+                console.error("REST login err:", err);
+                authError.innerHTML = "Network error. Please try again.";
+                authSubmitBtn.innerText = oldText;
+                authSubmitBtn.disabled = false;
+            }
+        };
+
+        // Try SDK first with 3s timeout
+        Promise.race([
+            auth.signInWithEmailAndPassword(email, password),
+            new Promise((_, rej) => setTimeout(() => rej(new Error('TIMEOUT')), 3000))
+        ]).then(async (userCredential) => {
+            const u = userCredential.user;
+            if (u) {
+                localStorage.setItem('bagged_local_id', u.uid);
+                localStorage.setItem('bagged_user_email', u.email || email);
+                localStorage.setItem('bagged_email', u.email || email);
+                if (u.refreshToken) localStorage.setItem('bagged_refresh_token', u.refreshToken);
+                try {
+                    const tok = await u.getIdToken();
+                    if (tok) localStorage.setItem('bagged_id_token', tok);
+                } catch (_) {}
+            }
+            window.location.href = 'dashboard.html';
+        }).catch(error => {
+            if (error.message === 'TIMEOUT' || error.code === 'auth/network-request-failed' || error.code === 'auth/internal-error') {
+                console.warn("SDK login failed or timed out, trying REST fallback:", error);
+                doRestLogin();
+            } else {
                 console.error("Login err:", error);
                 authError.innerHTML = friendlyError(error.code);
                 authSubmitBtn.innerText = oldText;
                 authSubmitBtn.disabled = false;
-            });
+            }
+        });
     } else {
         const firstName = authFirstName.value.trim();
         const lastName = authLastName.value.trim();

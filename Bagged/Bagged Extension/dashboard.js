@@ -13,44 +13,51 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 const db = firebase.firestore();
 try { db.settings({ merge: true }); } catch (_) {}
 
+// Helper: Refresh token via Google securetoken REST API
+async function refreshTokenREST() {
+    const refreshToken = localStorage.getItem('bagged_refresh_token');
+    if (!refreshToken) return null;
+    try {
+        const resp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${firebaseConfig.apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `grant_type=refresh_token&refresh_token=${refreshToken}`
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        if (data.id_token) {
+            localStorage.setItem('bagged_id_token', data.id_token);
+            if (data.refresh_token) localStorage.setItem('bagged_refresh_token', data.refresh_token);
+            if (data.user_id) localStorage.setItem('bagged_local_id', data.user_id);
+            return data.id_token;
+        }
+    } catch (_) {}
+    return null;
+}
+
 // Helper: get a valid (non-expired) Firebase ID token
 async function getValidToken() {
-    // 1. Try SDK auth with 3s timeout (getIdToken can hang in Safari)
+    // 1. Try SDK cached token first (fast, no network hang)
     if (auth.currentUser) {
         try {
             const token = await Promise.race([
-                auth.currentUser.getIdToken(true),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 3000))
+                auth.currentUser.getIdToken(false),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('getIdToken timeout')), 1000))
             ]);
-            localStorage.setItem('bagged_id_token', token);
-            // Store refresh token if available
-            if (auth.currentUser.refreshToken) {
-                localStorage.setItem('bagged_refresh_token', auth.currentUser.refreshToken);
-            }
-            return token;
-        } catch (_) {
-            console.warn('getIdToken failed or timed out, trying REST refresh');
-        }
-    }
-    // 2. Try refreshing via REST API using stored refresh token
-    const refreshToken = localStorage.getItem('bagged_refresh_token');
-    if (refreshToken) {
-        try {
-            const resp = await fetch(`https://securetoken.googleapis.com/v1/token?key=${firebaseConfig.apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: `grant_type=refresh_token&refresh_token=${refreshToken}`
-            });
-            const data = await resp.json();
-            if (data.id_token) {
-                localStorage.setItem('bagged_id_token', data.id_token);
-                if (data.refresh_token) localStorage.setItem('bagged_refresh_token', data.refresh_token);
-                if (data.user_id) localStorage.setItem('bagged_local_id', data.user_id);
-                return data.id_token;
+            if (token) {
+                localStorage.setItem('bagged_id_token', token);
+                if (auth.currentUser.refreshToken) {
+                    localStorage.setItem('bagged_refresh_token', auth.currentUser.refreshToken);
+                }
+                return token;
             }
         } catch (_) {}
     }
-    // 3. Fall back to whatever is stored (may be expired)
+    // 2. Try refreshing via REST API using stored refresh token
+    const refreshed = await refreshTokenREST();
+    if (refreshed) return refreshed;
+
+    // 3. Fall back to whatever is stored
     return localStorage.getItem('bagged_id_token');
 }
 
@@ -133,43 +140,106 @@ gateSubmit.addEventListener('click', async () => {
         }
     }
 
+    const oldText = gateSubmit.innerText;
+    gateSubmit.innerText = 'please wait...';
+    gateSubmit.disabled = true;
+
+    const map = {
+        'auth/email-already-in-use': 'an account with this email already exists',
+        'EMAIL_EXISTS': 'an account with this email already exists',
+        'auth/invalid-email': 'please enter a valid email address',
+        'INVALID_EMAIL': 'please enter a valid email address',
+        'auth/user-not-found': 'no account found with this email',
+        'EMAIL_NOT_FOUND': 'no account found with this email',
+        'auth/wrong-password': 'incorrect password',
+        'INVALID_PASSWORD': 'incorrect password',
+        'INVALID_LOGIN_CREDENTIALS': 'incorrect email or password',
+        'auth/invalid-credential': 'incorrect email or password',
+        'auth/weak-password': 'password must be at least 6 characters',
+        'WEAK_PASSWORD': 'password must be at least 6 characters',
+        'auth/too-many-requests': 'too many attempts - please try again later',
+        'TOO_MANY_ATTEMPTS_TRY_LATER': 'too many attempts - please try again later',
+        'auth/network-request-failed': 'network error - check your connection',
+        'auth/user-disabled': 'this account has been disabled',
+        'USER_DISABLED': 'this account has been disabled',
+        'auth/operation-not-allowed': 'email/password sign-in is not enabled',
+        'auth/missing-password': 'please enter a password',
+        'auth/internal-error': 'an internal error occurred - please try again',
+    };
+
     try {
-        let userCredential;
-        if (gateIsSignUp) {
-            userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        } else {
-            userCredential = await auth.signInWithEmailAndPassword(email, password);
+        let u = null;
+        let idToken = null;
+        let refreshToken = null;
+
+        // 1. Try SDK sign-in first with 3s timeout
+        try {
+            const sdkPromise = gateIsSignUp
+                ? auth.createUserWithEmailAndPassword(email, password)
+                : auth.signInWithEmailAndPassword(email, password);
+            const userCredential = await Promise.race([
+                sdkPromise,
+                new Promise((_, rej) => setTimeout(() => rej(new Error('SDK_TIMEOUT')), 3000))
+            ]);
+            u = userCredential.user;
+            if (u) {
+                refreshToken = u.refreshToken;
+                idToken = await u.getIdToken().catch(() => null);
+            }
+        } catch (sdkErr) {
+            console.warn('[Dashboard Auth] SDK failed/timed out, trying REST API:', sdkErr.message);
         }
-        // Store tokens for REST fallback (critical for Safari)
-        const u = userCredential.user;
-        if (u) {
+
+        // 2. If SDK didn't return a user (common in Safari), use direct Google Identity REST API
+        if (!u || !idToken) {
+            const endpoint = gateIsSignUp 
+                ? `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseConfig.apiKey}`
+                : `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}`;
+            const resp = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password, returnSecureToken: true })
+            });
+            const data = await resp.json();
+            if (data.error) {
+                const errCode = data.error.message || data.error.code;
+                gateError.innerText = map[errCode] || 'error: ' + errCode;
+                gateSubmit.innerText = oldText;
+                gateSubmit.disabled = false;
+                return;
+            }
+            u = { uid: data.localId, email: data.email || email };
+            idToken = data.idToken;
+            refreshToken = data.refreshToken;
+        }
+
+        if (u && idToken) {
             localStorage.setItem('bagged_local_id', u.uid);
-            if (u.refreshToken) localStorage.setItem('bagged_refresh_token', u.refreshToken);
-            try {
-                const idToken = await Promise.race([
-                    u.getIdToken(),
-                    new Promise((_, rej) => setTimeout(() => rej(), 3000))
-                ]);
-                if (idToken) localStorage.setItem('bagged_id_token', idToken);
-            } catch (_) {}
+            localStorage.setItem('bagged_user_email', u.email || email);
+            localStorage.setItem('bagged_email', u.email || email);
+            localStorage.setItem('bagged_id_token', idToken);
+            if (refreshToken) localStorage.setItem('bagged_refresh_token', refreshToken);
+
+            sidebar.style.display = 'flex';
+            mainContent.style.display = '';
+            loginGate.style.display = 'none';
+
+            const emailEl = document.getElementById('sidebar-email');
+            if (emailEl) {
+                emailEl.innerText = u.email || email;
+                emailEl.title = u.email || email;
+                emailEl.style.display = 'block';
+            }
+
+            const targetUser = { uid: u.uid, email: u.email || email, getIdToken: () => Promise.resolve(idToken) };
+            loadCloudDashboard(targetUser);
         }
     } catch (e) {
-        console.log('Auth error code:', e.code);
-        const map = {
-            'auth/email-already-in-use': 'an account with this email already exists',
-            'auth/invalid-email': 'please enter a valid email address',
-            'auth/user-not-found': 'no account found with this email',
-            'auth/wrong-password': 'incorrect password',
-            'auth/weak-password': 'password must be at least 6 characters',
-            'auth/too-many-requests': 'too many attempts - please try again later',
-            'auth/network-request-failed': 'network error - check your connection',
-            'auth/user-disabled': 'this account has been disabled',
-            'auth/operation-not-allowed': 'email/password sign-in is not enabled - please enable it in Firebase Console',
-            'auth/invalid-credential': 'invalid email or password',
-            'auth/missing-password': 'please enter a password',
-            'auth/internal-error': 'an internal error occurred - please try again',
-        };
-        gateError.innerText = map[e.code] || 'error: ' + (e.code || 'unknown') + ' - please try again';
+        console.error('Auth error:', e);
+        gateError.innerText = map[e.code] || 'error: ' + (e.message || 'unknown') + ' - please try again';
+    } finally {
+        gateSubmit.innerText = oldText;
+        gateSubmit.disabled = false;
     }
 });
 
@@ -203,50 +273,90 @@ if (publicSharedParams) {
     mainContent.style.display = '';
     loadPublicSharedDashboard(publicSharedParams.uid, publicSharedParams.bag);
 } else {
-    // Check for auto-login token from extension (passed via URL hash)
-    async function tryAutoLogin() {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    let isAutoLoggingIn = false;
+
+    // Check for auto-login credentials passed from extension via URL hash
+    function checkExtensionHashLogin() {
+        const hash = window.location.hash.substring(1);
+        if (!hash) return false;
+        const hashParams = new URLSearchParams(hash);
         const token = hashParams.get('token');
         const email = hashParams.get('email');
         const uid = hashParams.get('uid');
-        
+
         if (token && email && uid) {
-            // Clear hash from URL for cleanliness
+            isAutoLoggingIn = true;
+            console.log('[AutoLogin] Received extension credentials for:', email, uid);
+
+            // Clean hash from URL for privacy and clean address bar
             window.history.replaceState(null, '', window.location.pathname);
-            
-            // Try SDK sign-in first (uses the token to authenticate)
-            try {
-                await auth.signInWithEmailAndPassword(email, token);
-                return; // onAuthStateChanged will handle the rest
-            } catch (_) {}
-            
-            // If SDK fails, manually show dashboard using REST API with token
+
+            // Save these credentials into localStorage so they persist across page reloads
+            localStorage.setItem('bagged_local_id', uid);
+            localStorage.setItem('bagged_id_token', token);
+            localStorage.setItem('bagged_user_email', email);
+            localStorage.setItem('bagged_email', email);
+
+            // If another user was logged in on the SDK (e.g. Jane), sign them out so their tokens don't collide
+            if (auth && auth.currentUser && auth.currentUser.uid !== uid) {
+                try { auth.signOut(); } catch (_) {}
+            }
+
+            // Show UI immediately
             sidebar.style.display = 'flex';
             mainContent.style.display = '';
             loginGate.style.display = 'none';
-            document.getElementById('sidebar-email').innerText = email;
+
+            const emailEl = document.getElementById('sidebar-email');
+            if (emailEl) {
+                emailEl.innerText = email;
+                emailEl.title = email;
+                emailEl.style.display = 'block';
+            }
+
             if (window.location.protocol.startsWith('http')) {
                 const targetPath = '/dashboard/' + encodeURIComponent(email);
                 if (window.location.pathname !== targetPath) {
                     window.history.replaceState(null, '', targetPath);
                 }
             }
-            // Load dashboard using REST API with the auth token
-            const fakeUser = { uid: uid, email: email, getIdToken: () => Promise.resolve(token) };
-            loadCloudDashboard(fakeUser);
-            return;
+
+            const userObj = { uid: uid, email: email, getIdToken: () => Promise.resolve(token) };
+            loadCloudDashboard(userObj);
+            return true;
         }
+        return false;
     }
-    
-    tryAutoLogin();
+
+    const didAutoLogin = checkExtensionHashLogin();
 
     // Normal dashboard flow - require authentication
     auth.onAuthStateChanged((user) => {
+        if (isAutoLoggingIn) return;
+
         if (user) {
+            // Save current user to localStorage for REST fallback
+            localStorage.setItem('bagged_local_id', user.uid);
+            localStorage.setItem('bagged_user_email', user.email);
+            localStorage.setItem('bagged_email', user.email);
+            if (user.refreshToken) {
+                localStorage.setItem('bagged_refresh_token', user.refreshToken);
+            }
+            user.getIdToken(false).then(tok => {
+                if (tok) localStorage.setItem('bagged_id_token', tok);
+            }).catch(() => {});
+
             sidebar.style.display = 'flex';
             mainContent.style.display = '';
             loginGate.style.display = 'none';
-            document.getElementById('sidebar-email').innerText = user.email;
+
+            const emailEl = document.getElementById('sidebar-email');
+            if (emailEl) {
+                emailEl.innerText = user.email;
+                emailEl.title = user.email;
+                emailEl.style.display = 'block';
+            }
+
             // Update URL to /dashboard/email without reload
             if (window.location.protocol.startsWith('http')) {
                 const targetPath = '/dashboard/' + encodeURIComponent(user.email);
@@ -256,9 +366,31 @@ if (publicSharedParams) {
             }
             loadCloudDashboard(user);
         } else {
-            sidebar.style.display = 'none';
-            mainContent.style.display = 'none';
-            loginGate.style.display = 'flex';
+            // Check if we have localStorage session from previous REST login
+            const storedUid = localStorage.getItem('bagged_local_id');
+            const storedEmail = localStorage.getItem('bagged_user_email') || localStorage.getItem('bagged_email');
+            const storedToken = localStorage.getItem('bagged_id_token');
+
+            if (storedUid && storedEmail && storedToken) {
+                console.log('[Dashboard] Using stored REST session for:', storedEmail);
+                sidebar.style.display = 'flex';
+                mainContent.style.display = '';
+                loginGate.style.display = 'none';
+
+                const emailEl = document.getElementById('sidebar-email');
+                if (emailEl) {
+                    emailEl.innerText = storedEmail;
+                    emailEl.title = storedEmail;
+                    emailEl.style.display = 'block';
+                }
+
+                const userObj = { uid: storedUid, email: storedEmail, getIdToken: () => Promise.resolve(storedToken) };
+                loadCloudDashboard(userObj);
+            } else {
+                sidebar.style.display = 'none';
+                mainContent.style.display = 'none';
+                loginGate.style.display = 'flex';
+            }
         }
     });
 }
@@ -427,45 +559,69 @@ async function loadCloudDashboard(user) {
         container.innerHTML = "<p style='text-transform: lowercase; color: #888;'>please sign in to view your bags</p>";
         return;
     }
-    console.log('Loading wishlists for user:', uid);
+    console.log('[Dashboard] Loading wishlists for user:', uid);
 
     let boardsData = [];
 
-    // Try SDK with 5-second timeout, fall back to REST API
-    try {
-        const sdkPromise = (async () => {
-            const userWishlists = db.collection('users').doc(uid).collection('wishlists');
-            const wishlistsSnapshot = await userWishlists.get();
-            console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
-            const data = [];
-            for (const wishlistDoc of wishlistsSnapshot.docs) {
-                const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
-                const items = [];
-                itemsSnapshot.forEach(itemDoc => {
-                    items.push({ id: itemDoc.id, ...itemDoc.data() });
-                });
-                items.sort((a, b) => {
-                    const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
-                    const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
-                    return timeB - timeA;
-                });
-                data.push({ name: wishlistDoc.id, items });
-            }
-            return data;
-        })();
+    // Safari check: WebKit has issues with Firestore JS SDK IndexedDB/WebLock
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('SDK_TIMEOUT')), 5000)
-        );
+    let sdkSucceeded = false;
+    if (!isSafari) {
+        // Try SDK on Chrome / other browsers with 3-second timeout
+        try {
+            const sdkPromise = (async () => {
+                const userWishlists = db.collection('users').doc(uid).collection('wishlists');
+                const wishlistsSnapshot = await userWishlists.get();
+                console.log('SDK: Wishlists found:', wishlistsSnapshot.size);
+                const data = [];
+                for (const wishlistDoc of wishlistsSnapshot.docs) {
+                    const itemsSnapshot = await userWishlists.doc(wishlistDoc.id).collection('items').get();
+                    const items = [];
+                    itemsSnapshot.forEach(itemDoc => {
+                        items.push({ id: itemDoc.id, ...itemDoc.data() });
+                    });
+                    items.sort((a, b) => {
+                        const timeA = a.timestamp && typeof a.timestamp.toMillis === 'function' ? a.timestamp.toMillis() : 0;
+                        const timeB = b.timestamp && typeof b.timestamp.toMillis === 'function' ? b.timestamp.toMillis() : 0;
+                        return timeB - timeA;
+                    });
+                    data.push({ name: wishlistDoc.id, items });
+                }
+                return data;
+            })();
 
-        boardsData = await Promise.race([sdkPromise, timeoutPromise]);
-    } catch (sdkErr) {
-        console.warn('Firestore SDK failed or timed out, using REST API:', sdkErr.message);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('SDK_TIMEOUT')), 3000)
+            );
+
+            boardsData = await Promise.race([sdkPromise, timeoutPromise]);
+            sdkSucceeded = true;
+        } catch (sdkErr) {
+            console.warn('[Dashboard] Firestore SDK timed out/failed, falling back to REST API:', sdkErr.message);
+        }
+    }
+
+    // Bulletproof REST API for Safari or if SDK fails
+    if (!sdkSucceeded) {
         try {
             boardsData = await loadCloudDashboardREST(user);
         } catch (restErr) {
-            console.error('REST API also failed:', restErr);
-            container.innerHTML = "<p style='text-transform: lowercase; color: #d32f2f;'>failed to load wishlists — please try refreshing the page</p>";
+            console.error('[Dashboard] REST API failed to load wishlists:', restErr);
+            container.innerHTML = `<div style="text-align: center; padding: 40px 20px;">
+                <p style="color: #666; font-size: 13px; margin-bottom: 12px;">could not load wishlists (${restErr.message})</p>
+                <button id="retry-signin-btn" style="background: #000; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-size: 11px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;">sign in again</button>
+            </div>`;
+            const retryBtn = document.getElementById('retry-signin-btn');
+            if (retryBtn) {
+                retryBtn.onclick = () => {
+                    localStorage.removeItem('bagged_id_token');
+                    localStorage.removeItem('bagged_refresh_token');
+                    sidebar.style.display = 'none';
+                    mainContent.style.display = 'none';
+                    loginGate.style.display = 'flex';
+                };
+            }
             return;
         }
     }
@@ -506,12 +662,39 @@ async function loadCloudDashboard(user) {
 
 // REST API fallback for loading dashboard wishlists
 async function loadCloudDashboardREST(user) {
-    const token = await getValidToken() || await user.getIdToken().catch(() => null);
-    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    let token = null;
+    if (user && user.getIdToken) {
+        try {
+            token = await Promise.race([
+                user.getIdToken(false),
+                new Promise((_, rej) => setTimeout(rej, 1000))
+            ]);
+        } catch (_) {}
+    }
+    if (!token) token = await getValidToken();
+
     const uid = (user && user.uid) || localStorage.getItem('bagged_local_id');
     const baseUrl = `https://firestore.googleapis.com/v1/projects/bagged-dc0f7/databases/(default)/documents/users/${uid}/wishlists`;
     
-    const res = await fetch(baseUrl, { headers });
+    console.log(`[REST] Requesting wishlists for uid: ${uid}`);
+    let res = await fetch(baseUrl, { headers: token ? { 'Authorization': 'Bearer ' + token } : {} });
+
+    // Handle expired token or permission error by attempting token refresh
+    if (res.status === 401 || res.status === 403) {
+        console.warn(`[REST] Got ${res.status}, attempting token refresh`);
+        const refreshedToken = await refreshTokenREST();
+        if (refreshedToken) {
+            token = refreshedToken;
+            res = await fetch(baseUrl, { headers: { 'Authorization': 'Bearer ' + token } });
+        }
+    }
+
+    if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`[REST] Wishlist fetch error (${res.status}):`, errorText);
+        throw new Error(`error ${res.status}: please sign in again`);
+    }
+
     const data = await res.json();
     if (!data.documents || data.documents.length === 0) return [];
 
@@ -519,7 +702,10 @@ async function loadCloudDashboardREST(user) {
     for (const doc of data.documents) {
         const bagName = doc.name.split('/').pop();
         // Fetch items for each wishlist
-        const itemsRes = await fetch(baseUrl + '/' + encodeURIComponent(bagName) + '/items', { headers });
+        const itemsRes = await fetch(baseUrl + '/' + encodeURIComponent(bagName) + '/items', { 
+            headers: token ? { 'Authorization': 'Bearer ' + token } : {} 
+        });
+        if (!itemsRes.ok) continue;
         const itemsData = await itemsRes.json();
         const items = [];
         if (itemsData.documents) {
@@ -547,7 +733,7 @@ async function loadCloudDashboardREST(user) {
         });
         boardsData.push({ name: bagName, items });
     }
-    console.log('REST API: Wishlists loaded:', boardsData.length);
+    console.log('[REST] Wishlists loaded successfully:', boardsData.length);
     return boardsData;
 }
 
