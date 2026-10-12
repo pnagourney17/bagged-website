@@ -458,7 +458,7 @@ function updateCartDropdown() {
                         ${(item.size || item.color) ? `<span style="font-size: 9px; color: #777; font-weight: normal; text-transform: capitalize; background: #f5f5f5; padding: 1px 4px; border-radius: 3px;">${item.size ? `Size: ${item.size}` : ''}${item.size && item.color ? ' | ' : ''}${item.color ? `Col: ${item.color}` : ''}</span>` : ''}
                     </div>
                     <div style="display: flex; gap: 6px; margin-top: 6px;">
-                        <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex: 1; background: #000; color: #fff; text-decoration: none; padding: 5px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Shop Now</a>
+                        <a href="${getAffiliateUrl(item.url || '#')}" target="_blank" style="flex: 1; background: #000; color: #fff; text-decoration: none; padding: 5px 8px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Buy Now</a>
                         <button onclick="removeFromCart('${item.id}')" style="background: none; border: 1px solid #ddd; border-radius: 3px; padding: 5px 8px; cursor: pointer; font-size: 9px; color: #888;">✕</button>
                     </div>
                 </div>
@@ -1960,7 +1960,7 @@ Format:
             ? `https://www.google.com/search?q=site:${rec.domain}+${encodeURIComponent(rec.name)}`
             : `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(rec.query || (rec.brand + ' ' + rec.name))}`;
         const productUrl = directUrl || fallbackUrl;
-        const btnLabel = directUrl ? 'Shop Now' : 'Find Product';
+        const btnLabel = directUrl ? 'Buy Now' : 'Find Product';
         
         const card = document.createElement('div');
         card.className = 'product-card';
